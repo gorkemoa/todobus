@@ -58,12 +58,6 @@ export default function ProjectDetailPage() {
   const [showNewTask, setShowNewTask] = useState(false);
   const [creating, setCreating] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [tasksList, setTasksList] = useState<Array<{
-    title: string;
-    description: string;
-    assigneeId: string;
-    priority: string;
-  }>>([{ title: '', description: '', assigneeId: '', priority: 'ORTA' }]);
   const [bulkTaskText, setBulkTaskText] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [commonAssignee, setCommonAssignee] = useState('');

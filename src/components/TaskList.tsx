@@ -7,9 +7,9 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
-import { CheckCircle, Clock, ArrowUpRight } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 type TaskWithRelations = Task & {
   project: (Project & { group: Group }) | null;
@@ -56,8 +56,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, showProject = false }) => {
 
   return (
     <div>
-      <div className="mb-4 flex justify-between items-center">
-        <div className="flex space-x-2">
+      <div className="mb-4 flex justify-between items-center bg-white p-4 rounded-lg">
+        <div className="flex space-x-2 text-gray-900">
           <Button
             variant={filter === 'all' ? 'default' : 'outline'}
             size="sm"

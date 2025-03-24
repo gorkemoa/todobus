@@ -43,7 +43,7 @@ export default function YeniGorevPage() {
         const projectsData = await response.json();
 
         // Proje verilerini düzenliyoruz
-        const formattedProjects = projectsData.map((project: any) => {
+          const formattedProjects = projectsData.map((project: Project) => {
           const group = project.group || {};
           return {
             id: project.id,
@@ -87,10 +87,10 @@ export default function YeniGorevPage() {
         const membersData = await response.json();
         
         // Kullanıcı verilerini düzenle
-        const users = membersData.map((member: any) => ({
-          id: member.user.id,
-          name: member.user.name,
-          email: member.user.email,
+        const users = membersData.map((member: User) => ({
+          id: member.id,
+          name: member.name,
+          email: member.email,
         }));
         
         setGroupMembers(users);
