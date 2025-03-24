@@ -57,7 +57,7 @@ export default function GruplarPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gruplarım</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Gruplarım</h1>
         <div className="flex gap-3">
           <Link
             href="/panel/gruplar/davet"
@@ -76,7 +76,7 @@ export default function GruplarPage() {
 
       {groups.length === 0 ? (
         <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-          <p className="text-gray-500 mb-4">Henüz bir grubunuz bulunmuyor.</p>
+          <p className="text-gray-600 mb-4">Henüz bir grubunuz bulunmuyor.</p>
           <Link
             href="/panel/gruplar/yeni"
             className="text-blue-600 hover:text-blue-800 font-medium"
@@ -88,7 +88,7 @@ export default function GruplarPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {groups.map((group) => (
             <div key={group.id} className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all">
-              <h2 className="text-xl font-semibold mb-2">{group.name}</h2>
+              <h2 className="text-xl font-semibold mb-2 text-gray-800">{group.name}</h2>
               {group.description && (
                 <p className="text-gray-600 mb-4">{group.description}</p>
               )}

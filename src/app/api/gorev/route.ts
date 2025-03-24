@@ -79,7 +79,7 @@ export async function POST(request: Request) {
   }
 }
 
-// Görevleri listeleme
+// Kullanıcının oluşturduğu görevleri getirme
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -93,49 +93,133 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get("projectId");
+    const type = searchParams.get("type");
 
-    if (!projectId) {
-      return NextResponse.json(
-        { message: "Proje ID'si gerekli" },
-        { status: 400 }
-      );
-    }
-
-    // Projenin varlığını ve kullanıcının erişim yetkisini kontrol et
-    const project = await prisma.project.findFirst({
-      where: {
-        id: projectId,
-        group: {
-          OR: [
-            { members: { some: { userId: session.user.id } } },
-          ],
+    // Kullanıcının kendi görevlerini getir
+    if (type === "user") {
+      const tasks = await prisma.task.findMany({
+        where: {
+          createdById: session.user.id,
         },
-      },
-    });
+        include: {
+          project: {
+            select: {
+              id: true,
+              name: true,
+              group: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        }
+      });
 
-    if (!project) {
-      return NextResponse.json(
-        { message: "Bu projenin görevlerini görüntüleme yetkiniz yok" },
-        { status: 403 }
-      );
+      const formattedTasks = tasks.map(task => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        projectId: task.projectId,
+        projectName: task.project.name,
+        groupId: task.project.group.id,
+        groupName: task.project.group.name,
+      }));
+
+      return NextResponse.json(formattedTasks);
     }
 
-    const tasks = await prisma.task.findMany({
-      where: {
-        projectId,
-      },
-      include: {
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    // Kullanıcıya atanan görevleri getir
+    if (type === "assigned") {
+      const tasks = await prisma.task.findMany({
+        where: {
+          assigneeId: session.user.id,
+        },
+        include: {
+          project: {
+            select: {
+              id: true,
+              name: true,
+              group: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        }
+      });
+
+      const formattedTasks = tasks.map(task => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        projectId: task.projectId,
+        projectName: task.project.name,
+        groupId: task.project.group.id,
+        groupName: task.project.group.name,
+      }));
+
+      return NextResponse.json(formattedTasks);
+    }
+
+    // Proje görevlerini getirme (mevcut fonksiyonalite)
+    if (projectId) {
+      // Projenin varlığını ve kullanıcının erişim yetkisini kontrol et
+      const project = await prisma.project.findFirst({
+        where: {
+          id: projectId,
+          group: {
+            OR: [
+              { members: { some: { userId: session.user.id } } },
+            ],
           },
         },
-      },
-    });
+      });
 
-    return NextResponse.json(tasks);
+      if (!project) {
+        return NextResponse.json(
+          { message: "Bu projenin görevlerini görüntüleme yetkiniz yok" },
+          { status: 403 }
+        );
+      }
+
+      const tasks = await prisma.task.findMany({
+        where: {
+          projectId,
+        },
+        include: {
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json(tasks);
+    }
+
+    return NextResponse.json(
+      { message: "Geçerli bir sorgu parametresi gerekli" },
+      { status: 400 }
+    );
   } catch (error) {
     console.error("Görev listeleme hatası:", error);
     return NextResponse.json(

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import TaskProgressSummary from "../components/TaskProgressSummary";
+
 
 type Group = {
   id: string;
@@ -145,7 +145,7 @@ export default function PanelPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Gösterge Paneli</h1>
         <div className="flex space-x-3">
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild className="font-medium text-gray-700 border-gray-400">
             <Link
               href="/panel/gruplar/yeni"
             >
@@ -153,7 +153,7 @@ export default function PanelPage() {
               + Yeni Grup
             </Link>
           </Button>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild className="font-medium text-gray-700 border-gray-400">
             <Link
               href="/panel/gorevler/yeni"
             >
@@ -167,55 +167,50 @@ export default function PanelPage() {
       {/* Görev İstatistikleri */}
       {tasks.length > 0 && (
         <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-          <h2 className="text-lg font-semibold mb-4">Görevleriniz</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-800">Görevleriniz</h2>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-4">
             <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-3xl font-bold">{stats.total}</div>
-              <div className="text-sm text-gray-500 mt-1">Toplam Görev</div>
+              <div className="text-3xl font-bold text-gray-800">{stats.total}</div>
+              <div className="text-sm font-medium text-gray-700 mt-1">Toplam Görev</div>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-3xl font-bold text-green-600">{stats.completed}</div>
-              <div className="text-sm text-gray-500 mt-1">Tamamlanan</div>
+              <div className="text-3xl font-bold text-green-700">{stats.completed}</div>
+              <div className="text-sm font-medium text-gray-700 mt-1">Tamamlanan</div>
             </div>
             <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-3xl font-bold text-blue-600">{stats.inProgress}</div>
-              <div className="text-sm text-gray-500 mt-1">Devam Eden</div>
+              <div className="text-3xl font-bold text-blue-700">{stats.inProgress}</div>
+              <div className="text-sm font-medium text-gray-700 mt-1">Devam Eden</div>
             </div>
             <div className="bg-yellow-50 p-4 rounded-lg">
-              <div className="text-3xl font-bold text-yellow-600">{stats.waiting}</div>
-              <div className="text-sm text-gray-500 mt-1">Bekleyen</div>
+              <div className="text-3xl font-bold text-yellow-700">{stats.waiting}</div>
+              <div className="text-sm font-medium text-gray-700 mt-1">Bekleyen</div>
             </div>
           </div>
           
           <div className="flex justify-end">
-            <Link href="/panel/gorevler" className="text-blue-600 hover:text-blue-800 font-medium">
+            <Link href="/panel/gorevler" className="text-blue-700 hover:text-blue-900 font-semibold text-base">
               Tüm Görevleri Gör &rarr;
             </Link>
           </div>
         </div>
       )}
 
-      {/* Görev ilerlemesi kısmı */}
-      {tasks.length > 0 && (
-        <div className="mb-6">
-          <TaskProgressSummary tasks={tasks} title="Görev Özeti" />
-        </div>
-      )}
+
 
       {/* Gruplar */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Gruplarınız</h2>
-          <Link href="/panel/gruplar" className="text-blue-600 hover:text-blue-800 font-medium">
+          <h2 className="text-xl font-bold text-gray-800">Gruplarınız</h2>
+          <Link href="/panel/gruplar" className="text-blue-700 hover:text-blue-900 font-semibold text-base">
             Tümünü Gör &rarr;
           </Link>
         </div>
         
         {groups.length === 0 ? (
           <div className="text-center">
-            <p className="text-gray-500 mb-4">Henüz bir grubunuz bulunmuyor.</p>
-            <Button asChild>
+            <p className="text-gray-700 mb-4 font-medium">Henüz bir grubunuz bulunmuyor.</p>
+            <Button asChild className="font-medium">
               <Link
                 href="/panel/gruplar/yeni"
               >
@@ -239,7 +234,7 @@ export default function PanelPage() {
                   </div>
                   <Button 
                     variant="link" 
-                    className="p-0 h-auto mt-2" 
+                    className="p-0 h-auto mt-2 font-medium text-blue-700" 
                     onClick={() => router.push(`/panel/gruplar/${group.id}`)}
                   >
                     Detayları Görüntüle
@@ -254,7 +249,7 @@ export default function PanelPage() {
       {/* Son görevler kısmı */}
       {tasks.length > 0 && (
         <>
-          <h2 className="text-xl font-semibold mb-4 mt-8">Son Görevler</h2>
+          <h2 className="text-xl font-bold mb-4 mt-8 text-gray-800">Son Görevler</h2>
           <div className="space-y-2">
             {tasks.slice(0, 5).map((task) => (
               <Card key={task.id} className="hover:shadow-sm transition-shadow">
@@ -262,33 +257,33 @@ export default function PanelPage() {
                   <div className="flex justify-between items-center">
                     <Link 
                       href={`/panel/gorevler/${task.id}`}
-                      className="text-base font-medium hover:underline"
+                      className="text-base font-medium hover:underline text-gray-800"
                     >
                       {task.title}
                     </Link>
                     <div className="flex items-center space-x-2">
                       {task.status === 'WAITING' && (
-                        <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800">
                           Bekliyor
                         </span>
                       )}
                       {task.status === 'IN_PROGRESS' && (
-                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
                           Devam Ediyor
                         </span>
                       )}
                       {task.status === 'COMPLETED' && (
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
                           Tamamlandı
                         </span>
                       )}
                       {task.status === 'CANCELLED' && (
-                        <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
                           İptal Edildi
                         </span>
                       )}
                       {task.priority === 'HIGH' && (
-                        <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
                           Yüksek Öncelik
                         </span>
                       )}
@@ -297,7 +292,7 @@ export default function PanelPage() {
                   <CardDescription>
                     <Link 
                       href={`/panel/projeler/${task.project.id}`}
-                      className="text-sm hover:underline"
+                      className="text-sm hover:underline text-gray-700 font-medium"
                     >
                       {task.project.name} ({task.project.group.name})
                     </Link>
@@ -307,7 +302,7 @@ export default function PanelPage() {
             ))}
             {tasks.length > 5 && (
               <div className="text-center mt-4">
-                <Button variant="outline" asChild>
+                <Button variant="outline" asChild className="font-medium text-gray-700 border-gray-400">
                   <Link href="/panel/gorevlerim">
                     Tüm Görevleri Görüntüle
                   </Link>

@@ -21,11 +21,14 @@ export default function GorevlerimPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'kendi' | 'atanan'>('kendi');
 
   useEffect(() => {
     async function fetchTasks() {
+      setLoading(true);
       try {
-        const response = await fetch('/api/gorev/user');
+        const endpoint = activeTab === 'kendi' ? '/api/gorev?type=user' : '/api/gorev?type=assigned';
+        const response = await fetch(endpoint);
         
         if (!response.ok) {
           throw new Error('Görevler yüklenirken bir hata oluştu');
@@ -42,7 +45,7 @@ export default function GorevlerimPage() {
     }
 
     fetchTasks();
-  }, []);
+  }, [activeTab]);
 
   if (loading) {
     return (
@@ -79,7 +82,7 @@ export default function GorevlerimPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Görevlerim</h1>
+        <h1 className="text-2xl font-bold">Görevler</h1>
         <Link
           href="/panel/gorevlerim/yeni"
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded"
@@ -89,6 +92,21 @@ export default function GorevlerimPage() {
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="flex mb-6 border-b">
+          <button
+            onClick={() => setActiveTab('kendi')}
+            className={`py-2 px-4 font-medium ${activeTab === 'kendi' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-blue-600'}`}
+          >
+            Görevlerim
+          </button>
+          <button
+            onClick={() => setActiveTab('atanan')}
+            className={`py-2 px-4 font-medium ${activeTab === 'atanan' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-blue-600'}`}
+          >
+            Bana Atanan Görevler
+          </button>
+        </div>
+
         <div className="flex flex-wrap gap-2 mb-4">
           <button
             onClick={() => setStatusFilter(null)}
@@ -119,7 +137,13 @@ export default function GorevlerimPage() {
         {filteredTasks.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500">
-              {statusFilter ? `${statusFilter.toLowerCase().replace('_', ' ')} durumunda görev bulunamadı.` : 'Henüz bir göreviniz bulunmuyor.'}
+              {activeTab === 'kendi' 
+                ? (statusFilter 
+                    ? `${statusFilter.toLowerCase().replace('_', ' ')} durumunda görev bulunamadı.` 
+                    : 'Henüz bir göreviniz bulunmuyor.')
+                : (statusFilter 
+                    ? `${statusFilter.toLowerCase().replace('_', ' ')} durumunda size atanan görev bulunamadı.` 
+                    : 'Size atanan bir görev bulunmuyor.')}
             </p>
           </div>
         ) : (
