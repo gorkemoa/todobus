@@ -44,36 +44,81 @@ export async function POST(request: Request) {
       );
     }
 
-    const task = await prisma.task.create({
-      data: {
-        title,
-        description,
-        status,
-        priority,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        project: {
-          connect: {
-            id: projectId,
-          },
-        },
-        ...(assigneeId && {
-          assignee: {
-            connect: {
-              id: assigneeId,
-            },
-          },
-        }),
-      },
-    });
+    // Eğer assigneeId verilmiş ama boş string ise null yap
+    const finalAssigneeId = assigneeId === "" ? null : assigneeId;
 
+    let userId = null;
+    
+    // Atama yapılacak kişi verilmişse kontrol et
+    if (finalAssigneeId) {
+      // Kullanıcının grup üyesi olup olmadığını kontrol et
+      const groupMember = await prisma.groupMember.findFirst({
+        where: {
+          id: finalAssigneeId,
+          group: {
+            id: project.groupId
+          }
+        },
+        include: {
+          user: true
+        }
+      });
+
+      if (!groupMember) {
+        return NextResponse.json(
+          { message: "Geçersiz atama: Seçilen kişi bu grubun üyesi değil" },
+          { status: 400 }
+        );
+      }
+      
+      userId = groupMember.userId;
+    }
+    
+    // Görev veri nesnesi
+    const taskData: {
+      title: string;
+      description: string | null;
+      status: string;
+      priority: string;
+      dueDate: Date | null;
+      projectId: string;
+      createdById: string;
+      assigneeId?: string | null;
+    } = {
+      title,
+      description,
+      status,
+      priority,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      projectId: projectId,
+      // createdById değeri doğrudan session.user.id 
+      createdById: session.user.id
+    };
+    
+    // Eğer atama yapılacak kullanıcı varsa ekle
+    if (userId) {
+      taskData.assigneeId = userId;
+    }
+    
+    // Görevi oluştur
+    const task = await prisma.task.create({
+      data: taskData
+    });
+    
     // Projenin ilerleme durumunu güncelle
     await updateProjectProgress(projectId);
-
+    
     return NextResponse.json(task, { status: 201 });
   } catch (error) {
     console.error("Görev oluşturma hatası:", error);
+    
+    // Daha detaylı hata mesajı
+    const errorMessage = error instanceof Error 
+      ? `Görev oluşturulurken hata: ${error.message}`
+      : "Görev oluşturulurken bilinmeyen bir hata oluştu";
+      
     return NextResponse.json(
-      { message: "Bir hata oluştu" },
+      { message: errorMessage },
       { status: 500 }
     );
   }
@@ -113,6 +158,20 @@ export async function GET(request: Request) {
                 }
               }
             }
+          },
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
           }
         },
         orderBy: {
@@ -120,20 +179,7 @@ export async function GET(request: Request) {
         }
       });
 
-      const formattedTasks = tasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        dueDate: task.dueDate,
-        projectId: task.projectId,
-        projectName: task.project.name,
-        groupId: task.project.group.id,
-        groupName: task.project.group.name,
-      }));
-
-      return NextResponse.json(formattedTasks);
+      return NextResponse.json(tasks);
     }
 
     // Kullanıcıya atanan görevleri getir
@@ -154,6 +200,20 @@ export async function GET(request: Request) {
                 }
               }
             }
+          },
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
           }
         },
         orderBy: {
@@ -161,20 +221,7 @@ export async function GET(request: Request) {
         }
       });
 
-      const formattedTasks = tasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        dueDate: task.dueDate,
-        projectId: task.projectId,
-        projectName: task.project.name,
-        groupId: task.project.group.id,
-        groupName: task.project.group.name,
-      }));
-
-      return NextResponse.json(formattedTasks);
+      return NextResponse.json(tasks);
     }
 
     // Proje görevlerini getirme (mevcut fonksiyonalite)
@@ -210,6 +257,25 @@ export async function GET(request: Request) {
               email: true,
             },
           },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          project: {
+            select: {
+              id: true,
+              name: true,
+              group: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          }
         },
       });
 

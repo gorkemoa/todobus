@@ -147,7 +147,7 @@ export default function GroupDetailPage() {
   };
 
   const getCompletedTaskCount = (project: Project) => {
-    return project.tasks.filter(task => task.completed).length;
+    return project.tasks?.filter(task => task.completed)?.length || 0;
   };
 
   if (loading) {

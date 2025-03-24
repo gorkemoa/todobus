@@ -143,7 +143,7 @@ export default function PanelPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gösterge Paneli</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Gösterge Paneli</h1>
         <div className="flex space-x-3">
           <Button variant="outline" size="sm" asChild className="font-medium text-gray-700 border-gray-400">
             <Link

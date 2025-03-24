@@ -117,22 +117,23 @@ async function GorevlerPage() {
       <Tabs defaultValue="assigned" className="w-full mb-6">
         <TabsList className="mb-4">
           <TabsTrigger value="assigned">Bana Atanan</TabsTrigger>
-          <TabsTrigger value="project">Proje Görevleri</TabsTrigger>
+          <TabsTrigger value="project"> Benim Atadığım Görevler</TabsTrigger>
           <TabsTrigger value="all">Tüm Görevler</TabsTrigger>
         </TabsList>
         
         <TabsContent value="assigned">
-          <h2 className="text-xl font-semibold mb-4">Bana Atanan Görevler</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Bana Atanan Görevler</h2>
           <TaskList tasks={assignedTasks} showProject={true} />
         </TabsContent>
         
         <TabsContent value="project">
-          <h2 className="text-xl font-semibold mb-4">Projelerimde Bulunan Görevler</h2>
+
+          <h2 className="text-xl font-semibold mb-4 text-gray-900"> Benim Atadığım Görevler</h2>
           <TaskList tasks={projectTasks} showProject={true} />
         </TabsContent>
         
         <TabsContent value="all">
-          <h2 className="text-xl font-semibold mb-4">Tüm Görevler</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Tüm Görevler</h2>
           <TaskList tasks={[...assignedTasks, ...projectTasks]} showProject={true} />
         </TabsContent>
       </Tabs>

@@ -158,50 +158,117 @@ export default function ProjectDetailPage() {
         return;
       }
 
+      // Çok kısa görev isimlerini kontrol et
+      const tooShortTasks = tasksToCreate.filter(title => title.length < 3);
+      if (tooShortTasks.length > 0) {
+        setError(`Görev başlıkları en az 3 karakter olmalıdır. Lütfen aşağıdaki görevleri düzeltin: ${tooShortTasks.join(', ')}`);
+        setCreating(false);
+        return;
+      }
+
+      // Daha detaylı günlük kaydı
+      console.log(`${tasksToCreate.length} görev oluşturulmaya çalışılıyor`);
+      
       // Tüm görevleri toplu olarak gönder
       const responses = await Promise.all(
-        tasksToCreate.map(title => 
-          fetch('/api/gorev', {
+        tasksToCreate.map(title => {
+          console.log(`'${title}' görevi gönderiliyor...`);
+          
+          // Tüm veri alanlarının doğru formatta olduğundan emin olalım
+          const finalAssigneeId = commonAssignee || null;
+          
+          // İstek verilerini hazırla
+          const requestData = {
+            title,
+            description: null,
+            projectId,
+            assigneeId: finalAssigneeId,
+            priority: commonPriority,
+            status: 'BEKLEMEDE',
+          };
+          
+          console.log('İstek verisi:', requestData);
+          
+          return fetch('/api/gorev', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              title,
-              description: null,
-              projectId,
-              assigneeId: commonAssignee || null,
-              priority: commonPriority,
-              status: 'BEKLEMEDE',
-            }),
-          })
-        )
-      );
-
-      // Yanıtları kontrol et
-      const results = await Promise.all(
-        responses.map(async (response, index) => {
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`"${tasksToCreate[index]}" görevi oluşturulurken hata: ${errorData.message || 'Bilinmeyen hata'}`);
-          }
-          return response.json();
+            body: JSON.stringify(requestData),
+          });
         })
       );
 
-      // Başarıyla oluşturulan görevleri ekle
-      setTasks([...tasks, ...results]);
+      // Yanıtları kontrol et ve sonuçları topla
+      const resultsArray: Task[] = [];
+      const errorsArray: string[] = [];
+      
+      await Promise.all(
+        responses.map(async (response, index) => {
+          if (!response.ok) {
+            let errorMessage = `"${tasksToCreate[index]}" görevi oluşturulurken hata`;
+            console.log(`Başarısız yanıt: ${response.status} ${response.statusText} - ${tasksToCreate[index]}`);
+            
+            try {
+              const errorData = await response.json();
+              console.log('Hata verileri:', errorData);
+              if (response.status === 400) {
+                // 400 hatası için özel mesaj
+                errorMessage += `: ${errorData.message || 'Geçersiz görev verileri'} (HTTP ${response.status})`;
+              } else if (response.status === 500) {
+                // 500 hatası için daha açıklayıcı mesaj
+                errorMessage += `: Sunucu hatası. Lütfen daha sonra tekrar deneyin veya sistem yöneticisiyle iletişime geçin (HTTP ${response.status})`;
+              } else {
+                errorMessage += `: ${errorData.message || 'Bilinmeyen hata'} (HTTP ${response.status})`;
+              }
+            } catch {
+              // JSON ayrıştırma hatası durumunda
+              try {
+                // Ham metni kontrol et
+                const text = await response.text();
+                console.log('Hata metni:', text);
+                errorMessage += `: ${text || 'Bilinmeyen hata'} (HTTP ${response.status})`;
+              } catch {
+                errorMessage += `: HTTP ${response.status} - ${response.statusText}`;
+              }
+            }
+            errorsArray.push(errorMessage);
+            return null;
+          }
+          
+          try {
+            const result = await response.json();
+            resultsArray.push(result);
+            return result;
+          } catch {
+            errorsArray.push(`"${tasksToCreate[index]}" görevi oluşturuldu ancak yanıt ayrıştırılamadı.`);
+            return null;
+          }
+        })
+      );
 
-      // Formu sıfırla
-      setBulkTaskText('');
-      setSelectedTasks(new Set());
-      setShowNewTask(false);
+      // Hata varsa göster
+      if (errorsArray.length > 0) {
+        setError(`${errorsArray.length} görev eklenirken hata oluştu: ${errorsArray.join('. ')}`);
+        // Başarılı olanları hala ekleyelim
+        if (resultsArray.length > 0) {
+          setTasks([...tasks, ...resultsArray]);
+        }
+      } else {
+        // Başarıyla oluşturulan görevleri ekle
+        setTasks([...tasks, ...resultsArray]);
+  
+        // Formu sıfırla
+        setBulkTaskText('');
+        setSelectedTasks(new Set());
+        setShowNewTask(false);
+      }
 
       // Proje ilerlemesini güncelle
-      if (project) {
+      if (project && resultsArray.length > 0) {
         const completedTasks = tasks.filter(task => task.status === 'TAMAMLANDI').length;
-        const totalTasks = tasks.length + results.length;
-        const progress = Math.round((completedTasks / totalTasks) * 100);
+        const totalTasks = tasks.length + resultsArray.length;
+        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
         
         setProject({
           ...project,
@@ -212,9 +279,9 @@ export default function ProjectDetailPage() {
     } catch (error) {
       console.error('Görev oluşturma hatası:', error);
       if (error instanceof Error) {
-        setError(error.message);
+        setError(`Görev oluşturulurken bir hata oluştu: ${error.message}`);
       } else {
-        setError('Görev oluşturulurken bir hata oluştu');
+        setError('Görev oluşturulurken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
       }
     } finally {
       setCreating(false);
@@ -489,7 +556,7 @@ export default function ProjectDetailPage() {
                 </div>
               )}
               
-              {group && (
+              {group ? (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Tüm Görevler İçin Görevli
@@ -500,12 +567,25 @@ export default function ProjectDetailPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   >
                     <option value="">Görevli seçin (isteğe bağlı)</option>
-                    {group.members.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name}
-                      </option>
-                    ))}
+                    {group.members && group.members.length > 0 ? (
+                      group.members.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Grupta üye bulunamadı</option>
+                    )}
                   </select>
+                  {group.members && group.members.length === 0 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Bu grubun henüz üyeleri yok. Önce gruba üye ekleyin.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">
+                  Grup bilgileri yüklenemedi. Görevlere kişi atanamayacak.
                 </div>
               )}
               
