@@ -26,17 +26,14 @@ export async function POST(request: Request) {
     }
 
     // Kullanıcının gruba ait olup olmadığını kontrol et
-    const group = await prisma.group.findFirst({
+    const membership = await prisma.groupMember.findFirst({
       where: {
-        id: groupId,
-        OR: [
-          { ownerId: session.user.id },
-          { members: { some: { id: session.user.id } } },
-        ],
+        groupId: groupId,
+        userId: session.user.id,
       },
     });
 
-    if (!group) {
+    if (!membership) {
       return NextResponse.json(
         { message: "Bu grupta proje oluşturma yetkiniz yok" },
         { status: 403 }
