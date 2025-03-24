@@ -57,12 +57,12 @@ export default function GorevDetayPage() {
         setLoading(true);
         const response = await fetch(`/api/gorev/${params.id}`);
         
+        const data = await response.json();
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Görev yüklenirken bir hata oluştu');
+          throw new Error(data.message || 'Görev yüklenirken bir hata oluştu');
         }
         
-        const data = await response.json();
         setTask(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Görev yüklenirken bir hata oluştu');
@@ -92,12 +92,12 @@ export default function GorevDetayPage() {
         }),
       });
 
+      const updatedTask = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Durum güncellenirken bir hata oluştu');
+        throw new Error(updatedTask.message || 'Durum güncellenirken bir hata oluştu');
       }
 
-      const updatedTask = await response.json();
       setTask(updatedTask);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Durum güncellenirken bir hata oluştu');

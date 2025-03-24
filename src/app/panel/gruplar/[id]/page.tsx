@@ -28,6 +28,7 @@ type Group = {
   members: {
     id: string;
     name: string;
+    role: string;
   }[];
   createdAt?: string;
 };
@@ -58,11 +59,16 @@ export default function GroupDetailPage() {
         }
         
         const groupsData = await groupResponse.json();
+        console.log('API Yanıtı - Gruplar:', groupsData); // Debug için konsola yazma
+        
         const currentGroup = groupsData.find((g: Group) => g.id === groupId);
         
         if (!currentGroup) {
           throw new Error('Grup bulunamadı');
         }
+        
+        console.log('Seçilen Grup Detayları:', currentGroup); // Debug için grup detaylarını konsola yazma
+        console.log('Grup Üyeleri:', currentGroup.members); // Debug için üye listesini konsola yazma
         
         setGroup(currentGroup);
         
@@ -73,6 +79,7 @@ export default function GroupDetailPage() {
         }
         
         const projectsData = await projectsResponse.json();
+        console.log('API Yanıtı - Projeler:', projectsData); // Debug için konsola yazma
         setProjects(projectsData);
         
       } catch (error) {
@@ -140,8 +147,8 @@ export default function GroupDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center h-64" suppressHydrationWarning>
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500" suppressHydrationWarning></div>
       </div>
     );
   }
@@ -377,14 +384,16 @@ export default function GroupDetailPage() {
           </div>
           <div className="p-6">
             <div className="grid md:grid-cols-2 gap-4">
-              {group.members.map((member) => (
+              {group.members
+                .filter(member => member && typeof member === 'object' && member.id)
+                .map((member) => (
                 <div key={member.id} className="flex items-center p-4 border rounded-lg hover:bg-gray-50">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-full flex items-center justify-center mr-4 text-white font-bold">
-                    {member.name.substring(0, 2).toUpperCase()}
+                    {member.role ? member.role.substring(0, 2) : 'ÜY'}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-800">{member.name}</div>
-                    {member.id === group.owner.id ? (
+                    <div className="font-medium text-gray-800">{member.role || 'Bilinmeyen Rol'}</div>
+                    {member.role === 'YÖNETİCİ' || member.id === (group.owner && group.owner.id) ? (
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                         Grup Yöneticisi
                       </span>
