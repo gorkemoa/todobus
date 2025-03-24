@@ -58,9 +58,9 @@ export default function ProjelerimPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-gray-800">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Projelerim</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Projelerim</h1>
         <Link
           href="/panel/projeler/yeni"
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded"
@@ -84,10 +84,10 @@ export default function ProjelerimPage() {
           {projects.map((project) => (
             <div key={project.id} className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all">
               <div className="flex justify-between items-start mb-2">
-                <h2 className="text-xl font-semibold">{project.name}</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{project.name}</h2>
                 <Link 
                   href={`/panel/gruplar/${project.groupId}`}
-                  className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
+                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded"
                 >
                   {project.groupName}
                 </Link>

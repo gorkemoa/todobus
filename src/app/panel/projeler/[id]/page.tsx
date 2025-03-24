@@ -503,7 +503,7 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto text-gray-800">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -513,7 +513,7 @@ export default function ProjectDetailPage() {
               </Link>
             )}
             <span className="text-gray-500">/</span>
-            <h1 className="text-2xl font-bold">{project.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
             {project.status === 'KAPALI' && (
               <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                 Kapalı
@@ -622,8 +622,6 @@ export default function ProjectDetailPage() {
         )}
       </div>
 
-
-
       <Tabs defaultValue="tasks">
         <TabsList>
           <TabsTrigger value="tasks">Görevler</TabsTrigger>
@@ -649,9 +647,9 @@ export default function ProjectDetailPage() {
                           className="bg-card p-3 rounded-md border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                           onClick={() => window.location.href = `/panel/gorevler/${task.id}`}
                         >
-                          <div className="font-medium">{task.title}</div>
+                          <div className="font-medium text-gray-800">{task.title}</div>
                           {task.dueDate && (
-                            <div className="flex items-center text-sm text-muted-foreground mt-2">
+                            <div className="flex items-center text-sm text-gray-600 mt-2">
                               <Calendar className="h-3 w-3 mr-1" />
                               {format(new Date(task.dueDate), 'dd MMM yyyy', { locale: tr })}
                             </div>
@@ -667,7 +665,7 @@ export default function ProjectDetailPage() {
                       ))
                     }
                     {project.tasks.filter(task => task.status === 'WAITING').length === 0 && (
-                      <div className="text-sm text-muted-foreground">Bekleyen görev yok</div>
+                      <div className="text-sm text-gray-600">Bekleyen görev yok</div>
                     )}
                   </div>
                 </div>
@@ -687,9 +685,9 @@ export default function ProjectDetailPage() {
                           className="bg-card p-3 rounded-md border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                           onClick={() => window.location.href = `/panel/gorevler/${task.id}`}
                         >
-                          <div className="font-medium">{task.title}</div>
+                          <div className="font-medium text-gray-800">{task.title}</div>
                           {task.dueDate && (
-                            <div className="flex items-center text-sm text-muted-foreground mt-2">
+                            <div className="flex items-center text-sm text-gray-600 mt-2">
                               <Calendar className="h-3 w-3 mr-1" />
                               {format(new Date(task.dueDate), 'dd MMM yyyy', { locale: tr })}
                             </div>
@@ -705,7 +703,7 @@ export default function ProjectDetailPage() {
                       ))
                     }
                     {project.tasks.filter(task => task.status === 'IN_PROGRESS').length === 0 && (
-                      <div className="text-sm text-muted-foreground">Devam eden görev yok</div>
+                      <div className="text-sm text-gray-600">Devam eden görev yok</div>
                     )}
                   </div>
                 </div>
@@ -725,9 +723,9 @@ export default function ProjectDetailPage() {
                           className="bg-card p-3 rounded-md border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                           onClick={() => window.location.href = `/panel/gorevler/${task.id}`}
                         >
-                          <div className="font-medium">{task.title}</div>
+                          <div className="font-medium text-gray-800">{task.title}</div>
                           {task.updatedAt && task.status === 'COMPLETED' && (
-                            <div className="flex items-center text-sm text-muted-foreground mt-2">
+                            <div className="flex items-center text-sm text-gray-600 mt-2">
                               <Calendar className="h-3 w-3 mr-1" />
                               {format(new Date(task.updatedAt), 'dd MMM yyyy', { locale: tr })}
                             </div>
@@ -736,7 +734,7 @@ export default function ProjectDetailPage() {
                       ))
                     }
                     {project.tasks.filter(task => task.status === 'COMPLETED').length === 0 && (
-                      <div className="text-sm text-muted-foreground">Tamamlanan görev yok</div>
+                      <div className="text-sm text-gray-600">Tamamlanan görev yok</div>
                     )}
                   </div>
                 </div>
@@ -744,7 +742,7 @@ export default function ProjectDetailPage() {
             </div>
           ) : (
             <div className="text-center p-8 bg-muted rounded-lg">
-              <p className="mb-4">Bu projede henüz görev bulunmuyor.</p>
+              <p className="mb-4 text-gray-800">Bu projede henüz görev bulunmuyor.</p>
               <Button asChild>
                 <a href={`/panel/gorevler/yeni?projectId=${project.id}`}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -755,7 +753,7 @@ export default function ProjectDetailPage() {
           )}
         </TabsContent>
         <TabsContent value="timeline" className="mt-4">
-          <div className="text-muted-foreground">
+          <div className="text-gray-600">
             Proje zaman çizelgesi yakında eklenecek
           </div>
         </TabsContent>
