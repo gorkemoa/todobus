@@ -44,7 +44,7 @@ type Task = {
 };
 
 export default function PanelPage() {
-  const { data: session } = useSession();
+  useSession();
   const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -62,14 +62,37 @@ export default function PanelPage() {
         }
         
         const groupsData = await groupsResponse.json();
-        setGroups(groupsData);
+        
+        // Veri doğrulama kontrolü
+        if (Array.isArray(groupsData)) {
+          // Veriyi _count özelliğinin varlığını kontrol ederek temizle
+          const validGroups = groupsData.map(group => {
+            if (!group._count) {
+              // _count yoksa ekle
+              return {
+                ...group,
+                _count: { projects: 0, members: 0 }
+              };
+            }
+            return group;
+          });
+          setGroups(validGroups);
+        } else {
+          setGroups([]);
+          console.error('API geçersiz grup verisi döndürdü:', groupsData);
+        }
         
         // Son görevleri getir
         const tasksResponse = await fetch('/api/gorev/son');
         
         if (tasksResponse.ok) {
           const tasksData = await tasksResponse.json();
-          setTasks(tasksData);
+          if (Array.isArray(tasksData)) {
+            setTasks(tasksData);
+          } else {
+            setTasks([]);
+            console.error('API geçersiz görev verisi döndürdü:', tasksData);
+          }
         }
         
       } catch (error) {
@@ -86,9 +109,9 @@ export default function PanelPage() {
   // Görev istatistiklerini hazırla
   const getTaskStats = () => {
     const totalTasks = tasks.length;
-    const completedTasks = tasks.filter(task => task.status === 'TAMAMLANDI').length;
-    const inProgressTasks = tasks.filter(task => task.status === 'DEVAM_EDIYOR').length;
-    const waitingTasks = tasks.filter(task => task.status === 'BEKLEMEDE').length;
+    const completedTasks = tasks.filter(task => task.status === 'COMPLETED').length;
+    const inProgressTasks = tasks.filter(task => task.status === 'IN_PROGRESS').length;
+    const waitingTasks = tasks.filter(task => task.status === 'WAITING').length;
     
     return {
       total: totalTasks,
@@ -203,7 +226,7 @@ export default function PanelPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {groups.slice(0, 3).map((group) => (
+            {groups.filter(group => group !== null && group !== undefined).slice(0, 3).map((group) => (
               <Card key={group.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <CardTitle className="text-lg">{group.name}</CardTitle>
@@ -211,8 +234,8 @@ export default function PanelPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{group._count.projects} Proje</span>
-                    <span>{group._count.members} Üye</span>
+                    <span>{group._count?.projects || 0} Proje</span>
+                    <span>{group._count?.members || 0} Üye</span>
                   </div>
                   <Button 
                     variant="link" 

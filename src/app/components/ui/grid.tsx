@@ -6,18 +6,6 @@ import { cn } from '@/lib/utils';
 interface GridProps extends React.HTMLAttributes<HTMLDivElement> {
   columns?: number;
   gap?: number | string;
-  rowGap?: number | string;
-  columnGap?: number | string;
-  flow?: 'row' | 'column' | 'dense' | 'row dense' | 'column dense';
-}
-
-interface GridItemProps extends React.HTMLAttributes<HTMLDivElement> {
-  span?: number;
-  start?: number;
-  end?: number;
-  rowSpan?: number;
-  rowStart?: number;
-  rowEnd?: number;
 }
 
 export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
@@ -25,10 +13,7 @@ export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
     className, 
     children, 
     columns = 12, 
-    gap, 
-    rowGap, 
-    columnGap, 
-    flow,
+    gap = 4,
     ...props 
   }, ref) => {
     return (
@@ -40,10 +25,7 @@ export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
         )}
         style={{
           gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-          gap: gap,
-          rowGap: rowGap,
-          columnGap: columnGap,
-          gridAutoFlow: flow,
+          gap: typeof gap === 'number' ? `${gap * 0.25}rem` : gap,
         }}
         {...props}
       >
@@ -55,16 +37,15 @@ export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
 
 Grid.displayName = 'Grid';
 
+interface GridItemProps extends React.HTMLAttributes<HTMLDivElement> {
+  span?: number;
+}
+
 export const GridItem = React.forwardRef<HTMLDivElement, GridItemProps>(
   ({ 
     className, 
     children, 
-    span, 
-    start, 
-    end, 
-    rowSpan, 
-    rowStart, 
-    rowEnd,
+    span = 1, 
     ...props 
   }, ref) => {
     return (
@@ -72,8 +53,7 @@ export const GridItem = React.forwardRef<HTMLDivElement, GridItemProps>(
         ref={ref}
         className={cn(className)}
         style={{
-          gridColumn: span ? `span ${span} / span ${span}` : start && end ? `${start} / ${end}` : start ? `${start} / auto` : end ? `auto / ${end}` : undefined,
-          gridRow: rowSpan ? `span ${rowSpan} / span ${rowSpan}` : rowStart && rowEnd ? `${rowStart} / ${rowEnd}` : rowStart ? `${rowStart} / auto` : rowEnd ? `auto / ${rowEnd}` : undefined,
+          gridColumn: `span ${span} / span ${span}`,
         }}
         {...props}
       >

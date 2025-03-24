@@ -3,9 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Grid, GridItem } from "@/components/ui/grid";
 
 type TaskStatsSummary = {
   total: number;
@@ -62,21 +60,21 @@ const TaskProgressSummary: React.FC<TaskProgressSummaryProps> = ({
           </div>
           
           <div className="grid grid-cols-4 gap-2 text-center">
-            <div className="rounded-lg bg-muted p-2">
+            <div className="rounded-lg bg-slate-100 p-2">
               <div className="text-lg font-bold">{stats.total}</div>
-              <div className="text-xs text-muted-foreground">Toplam</div>
+              <div className="text-xs text-gray-500">Toplam</div>
             </div>
             <div className="rounded-lg bg-green-50 p-2">
               <div className="text-lg font-bold text-green-600">{stats.completed}</div>
-              <div className="text-xs text-muted-foreground">Tamamlandı</div>
+              <div className="text-xs text-gray-500">Tamamlandı</div>
             </div>
             <div className="rounded-lg bg-blue-50 p-2">
               <div className="text-lg font-bold text-blue-600">{stats.inProgress}</div>
-              <div className="text-xs text-muted-foreground">Devam Ediyor</div>
+              <div className="text-xs text-gray-500">Devam Ediyor</div>
             </div>
             <div className="rounded-lg bg-amber-50 p-2">
               <div className="text-lg font-bold text-amber-600">{stats.waiting}</div>
-              <div className="text-xs text-muted-foreground">Bekliyor</div>
+              <div className="text-xs text-gray-500">Bekliyor</div>
             </div>
           </div>
         </div>
