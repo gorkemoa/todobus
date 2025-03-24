@@ -53,6 +53,16 @@ export default function Sidebar() {
         >
           Görevlerim
         </Link>
+        <Link
+          href="/panel/davetler"
+          className={`block px-4 py-2 rounded-md ${
+            isActive('/panel/davetler')
+              ? 'bg-blue-500 text-white'
+              : 'text-gray-700 hover:bg-gray-100'
+          }`}
+        >
+          Gelen Davetler
+        </Link>
       </div>
     </div>
   );
