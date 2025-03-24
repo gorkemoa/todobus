@@ -56,12 +56,18 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showNewTask, setShowNewTask] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskDescription, setNewTaskDescription] = useState('');
-  const [newTaskAssignee, setNewTaskAssignee] = useState('');
-  const [newTaskPriority, setNewTaskPriority] = useState('ORTA');
   const [creating, setCreating] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [tasksList, setTasksList] = useState<Array<{
+    title: string;
+    description: string;
+    assigneeId: string;
+    priority: string;
+  }>>([{ title: '', description: '', assigneeId: '', priority: 'ORTA' }]);
+  const [bulkTaskText, setBulkTaskText] = useState('');
+  const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
+  const [commonAssignee, setCommonAssignee] = useState('');
+  const [commonPriority, setCommonPriority] = useState('ORTA');
 
   const projectId = params.id as string;
 
@@ -129,54 +135,78 @@ export default function ProjectDetailPage() {
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!newTaskTitle.trim()) return;
-    
+
     // Eğer proje kapalıysa görev eklemeye izin verme
     if (project?.status === 'KAPALI') {
       setError('Kapalı projelere yeni görev eklenemez. Lütfen önce projeyi açın.');
       return;
     }
-    
+
     try {
       setCreating(true);
       setError(''); // Hata mesajını temizle
-      
-      const response = await fetch('/api/gorev', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: newTaskTitle,
-          description: newTaskDescription || null,
-          projectId,
-          assigneeId: newTaskAssignee || null,
-          priority: newTaskPriority,
-          status: 'BEKLEMEDE',
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Görev oluşturma hatası:', errorData);
-        throw new Error(errorData.message || 'Görev oluşturulurken bir hata oluştu');
+
+      // Metin kutusunu satırlara böl, boş satırları filtrele
+      const taskLines = bulkTaskText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+      // Seçili görevleri kontrol et
+      let tasksToCreate = taskLines;
+      if (selectedTasks.size > 0) {
+        tasksToCreate = taskLines.filter((_, index) => selectedTasks.has(index));
       }
-      
-      const newTask = await response.json();
-      console.log('Yeni görev oluşturuldu:', newTask);
-      
-      setTasks([...tasks, newTask]);
-      setNewTaskTitle('');
-      setNewTaskDescription('');
-      setNewTaskAssignee('');
-      setNewTaskPriority('ORTA');
+
+      if (tasksToCreate.length === 0) {
+        setError('Lütfen en az bir görev ekleyin veya seçin.');
+        setCreating(false);
+        return;
+      }
+
+      // Tüm görevleri toplu olarak gönder
+      const responses = await Promise.all(
+        tasksToCreate.map(title => 
+          fetch('/api/gorev', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              title,
+              description: null,
+              projectId,
+              assigneeId: commonAssignee || null,
+              priority: commonPriority,
+              status: 'BEKLEMEDE',
+            }),
+          })
+        )
+      );
+
+      // Yanıtları kontrol et
+      const results = await Promise.all(
+        responses.map(async (response, index) => {
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`"${tasksToCreate[index]}" görevi oluşturulurken hata: ${errorData.message || 'Bilinmeyen hata'}`);
+          }
+          return response.json();
+        })
+      );
+
+      // Başarıyla oluşturulan görevleri ekle
+      setTasks([...tasks, ...results]);
+
+      // Formu sıfırla
+      setBulkTaskText('');
+      setSelectedTasks(new Set());
       setShowNewTask(false);
-      
+
       // Proje ilerlemesini güncelle
       if (project) {
-        const completedTasks = tasks.filter(task => task.status === 'TAMAMLANDI').length + (newTask.status === 'TAMAMLANDI' ? 1 : 0);
-        const totalTasks = tasks.length + 1;
+        const completedTasks = tasks.filter(task => task.status === 'TAMAMLANDI').length;
+        const totalTasks = tasks.length + results.length;
         const progress = Math.round((completedTasks / totalTasks) * 100);
         
         setProject({
@@ -184,7 +214,7 @@ export default function ProjectDetailPage() {
           progress,
         });
       }
-      
+
     } catch (error) {
       console.error('Görev oluşturma hatası:', error);
       if (error instanceof Error) {
@@ -388,49 +418,94 @@ export default function ProjectDetailPage() {
 
     if (!showNewTask) return null;
 
+    // Metin kutusunu satırlara böl ve görüntüle
+    const taskLines = bulkTaskText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    // Tüm görevleri seç/kaldır
+    const toggleAllTasks = () => {
+      if (selectedTasks.size === taskLines.length) {
+        // Tüm seçimleri kaldır
+        setSelectedTasks(new Set());
+      } else {
+        // Tümünü seç
+        const allIndexes = new Set<number>();
+        taskLines.forEach((_, index) => allIndexes.add(index));
+        setSelectedTasks(allIndexes);
+      }
+    };
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-          <h3 className="text-lg font-medium mb-4">Yeni Görev Ekle</h3>
+        <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6">
+          <h3 className="text-lg font-medium mb-4">Toplu Görev Ekle</h3>
           
           <form onSubmit={handleCreateTask}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Başlık
-                </label>
-                <input
-                  type="text"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Açıklama
+                  Görevler (Her satır bir görev olacak)
                 </label>
                 <textarea
-                  value={newTaskDescription}
-                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  value={bulkTaskText}
+                  onChange={(e) => setBulkTaskText(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  rows={3}
+                  rows={8}
+                  placeholder="Görev 1&#10;Görev 2&#10;Görev 3"
                 ></textarea>
               </div>
+
+              {taskLines.length > 0 && (
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Eklenecek Görevler ({selectedTasks.size}/{taskLines.length})
+                    </label>
+                    <button
+                      type="button"
+                      onClick={toggleAllTasks}
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      {selectedTasks.size === taskLines.length ? 'Tümünü Kaldır' : 'Tümünü Seç'}
+                    </button>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {taskLines.map((task, index) => (
+                      <div key={index} className="flex items-center py-1 hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={selectedTasks.has(index)}
+                          onChange={() => {
+                            const newSelection = new Set(selectedTasks);
+                            if (newSelection.has(index)) {
+                              newSelection.delete(index);
+                            } else {
+                              newSelection.add(index);
+                            }
+                            setSelectedTasks(newSelection);
+                          }}
+                          className="h-4 w-4 text-blue-600 mr-3"
+                        />
+                        <span className="text-sm">{task}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {group && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Görevli
+                    Tüm Görevler İçin Görevli
                   </label>
                   <select
-                    value={newTaskAssignee}
-                    onChange={(e) => setNewTaskAssignee(e.target.value)}
+                    value={commonAssignee}
+                    onChange={(e) => setCommonAssignee(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   >
-                    <option value="">Görevli seçin</option>
+                    <option value="">Görevli seçin (isteğe bağlı)</option>
                     {group.members.map((member) => (
                       <option key={member.id} value={member.id}>
                         {member.name}
@@ -442,11 +517,11 @@ export default function ProjectDetailPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Öncelik
+                  Tüm Görevler İçin Öncelik
                 </label>
                 <select
-                  value={newTaskPriority}
-                  onChange={(e) => setNewTaskPriority(e.target.value)}
+                  value={commonPriority}
+                  onChange={(e) => setCommonPriority(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value="DÜŞÜK">Düşük</option>
@@ -467,9 +542,9 @@ export default function ProjectDetailPage() {
               <button
                 type="submit"
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                disabled={creating}
+                disabled={creating || taskLines.length === 0 || (selectedTasks.size > 0 && selectedTasks.size === 0)}
               >
-                {creating ? 'Ekleniyor...' : 'Ekle'}
+                {creating ? 'Ekleniyor...' : `${selectedTasks.size > 0 ? selectedTasks.size : taskLines.length} Görevi Ekle`}
               </button>
             </div>
           </form>
@@ -569,7 +644,7 @@ export default function ProjectDetailPage() {
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
               </svg>
-              Yeni Görev
+              Toplu Görev Ekle
             </button>
           )}
         </div>
