@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(uuid())
+  name            String
+  email           String        @unique
+  password        String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  groups          GroupMember[]
+  sentInvitations Invitation[]  @relation("InvitedBy")
+  tasks           Task[]
+}
+
+model Group {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  members     GroupMember[]
+  invitations Invitation[]
+  projects    Project[]
+}
+
+model GroupMember {
+  id        String   @id @default(uuid())
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  groupId   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  group     Group    @relation(fields: [groupId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  progress    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  groupId     String
+  group       Group    @relation(fields: [groupId], references: [id])
+  tasks       Task[]
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  status      String    @default("BEKLEMEDE")
+  priority    String    @default("ORTA")
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  projectId   String
+  assigneeId  String?
+  assignee    User?     @relation(fields: [assigneeId], references: [id])
+  project     Project   @relation(fields: [projectId], references: [id])
+}
+
+model Invitation {
+  id          String    @id @default(uuid())
+  email       String
+  token       String    @unique
+  status      String    @default("BEKLEMEDE")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  groupId     String
+  invitedById String
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
+  group       Group     @relation(fields: [groupId], references: [id])
+}
