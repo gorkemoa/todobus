@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { CalendarIcon, UserGroupIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 type Project = {
   id: string;
@@ -28,11 +29,11 @@ type Group = {
     id: string;
     name: string;
   }[];
+  createdAt?: string;
 };
 
 export default function GroupDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const [group, setGroup] = useState<Group | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +42,7 @@ export default function GroupDetailPage() {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [creating, setCreating] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('projeler');
 
   const groupId = params.id as string;
 
@@ -132,6 +134,10 @@ export default function GroupDetailPage() {
     }
   };
 
+  const getCompletedTaskCount = (project: Project) => {
+    return project.tasks.filter(task => task.completed).length;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -157,26 +163,46 @@ export default function GroupDetailPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">{group.name}</h1>
-          {group.description && (
-            <p className="text-gray-600 mt-1">{group.description}</p>
-          )}
+    <div className="max-w-5xl mx-auto">
+      {/* Grup başlık alanı */}
+      <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="flex justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">{group.name}</h1>
+            {group.description && (
+              <p className="mt-2 text-blue-100">{group.description}</p>
+            )}
+            <div className="mt-4 flex items-center">
+              <UserGroupIcon className="h-5 w-5 mr-2" />
+              <span>{group.members.length} Üye</span>
+              
+              <div className="mx-4 h-5 border-l border-blue-300"></div>
+              
+              <ClipboardDocumentCheckIcon className="h-5 w-5 mr-2" />
+              <span>{projects.length} Proje</span>
+              
+              {group.createdAt && (
+                <>
+                  <div className="mx-4 h-5 border-l border-blue-300"></div>
+                  <CalendarIcon className="h-5 w-5 mr-2" />
+                  <span>Oluşturulma: {new Date(group.createdAt).toLocaleDateString('tr-TR')}</span>
+                </>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => setShowNewProject(!showNewProject)}
+            className="bg-white text-blue-700 hover:bg-blue-50 font-medium py-2 px-4 rounded-lg shadow transition duration-200"
+          >
+            + Yeni Proje
+          </button>
         </div>
-        <button
-          onClick={() => setShowNewProject(!showNewProject)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded"
-        >
-          + Yeni Proje
-        </button>
       </div>
 
       {/* Yeni proje formu */}
       {showNewProject && (
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-          <h2 className="text-lg font-medium mb-4">Yeni Proje Ekle</h2>
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200 animate-fadeIn">
+          <h2 className="text-lg font-medium mb-4 text-gray-800">Yeni Proje Ekle</h2>
           <form onSubmit={handleCreateProject} className="space-y-4">
             <div>
               <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -227,88 +253,205 @@ export default function GroupDetailPage() {
         </div>
       )}
 
-      {/* Projeler listesi */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium">Projeler ({projects.length})</h2>
+      {/* Sekme menüsü */}
+      <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+        <div className="flex border-b">
+          <button
+            onClick={() => setSelectedTab('projeler')}
+            className={`flex-1 py-3 px-4 text-center font-medium ${
+              selectedTab === 'projeler' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Projeler
+          </button>
+          <button
+            onClick={() => setSelectedTab('üyeler')}
+            className={`flex-1 py-3 px-4 text-center font-medium ${
+              selectedTab === 'üyeler' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Üyeler
+          </button>
+          <button
+            onClick={() => setSelectedTab('detaylar')}
+            className={`flex-1 py-3 px-4 text-center font-medium ${
+              selectedTab === 'detaylar' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Grup Detayları
+          </button>
         </div>
+      </div>
 
-        {projects.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            Bu grupta henüz bir proje bulunmuyor.
+      {/* Projeler Sekmesi */}
+      {selectedTab === 'projeler' && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-lg font-medium text-gray-800">Projeler ({projects.length})</h2>
+            <div>
+              <select className="border border-gray-300 rounded-md p-1 text-sm">
+                <option>Tümünü Göster</option>
+                <option>İsme Göre Sırala</option>
+                <option>İlerlemeye Göre Sırala</option>
+              </select>
+            </div>
           </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {projects.map((project) => (
-              <div key={project.id} className="p-6 hover:bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Link 
-                      href={`/panel/projeler/${project.id}`}
-                      className="text-lg font-medium text-blue-600 hover:text-blue-800"
-                    >
-                      {project.name}
-                    </Link>
-                    {project.description && (
-                      <p className="text-gray-600 mt-1">{project.description}</p>
-                    )}
-                    <div className="text-sm text-gray-500 mt-2">
-                      {project.tasks.length} görev
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <div className="flex items-center mb-2">
-                      <div className="text-sm font-medium text-gray-900 mr-2">
+
+          {projects.length === 0 ? (
+            <div className="p-10 text-center">
+              <div className="text-gray-400 mb-3">
+                <ClipboardDocumentCheckIcon className="h-12 w-12 mx-auto" />
+              </div>
+              <p className="text-gray-500 mb-6">Bu grupta henüz bir proje bulunmuyor.</p>
+              <button
+                onClick={() => setShowNewProject(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md"
+              >
+                İlk Projeyi Oluştur
+              </button>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4 p-6">
+              {projects.map((project) => (
+                <div key={project.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition duration-300 overflow-hidden">
+                  <div className="p-5">
+                    <div className="flex justify-between items-start mb-3">
+                      <Link 
+                        href={`/panel/projeler/${project.id}`}
+                        className="text-lg font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        {project.name}
+                      </Link>
+                      <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                         {project.progress}%
-                      </div>
-                      <div className="w-32 h-2 bg-gray-200 rounded-full">
+                      </span>
+                    </div>
+                    
+                    {project.description && (
+                      <p className="text-gray-600 mb-4 text-sm">{project.description}</p>
+                    )}
+                    
+                    <div className="mb-3">
+                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 rounded-full"
+                          className={`h-full rounded-full ${
+                            project.progress < 30 ? 'bg-red-500' : 
+                            project.progress < 70 ? 'bg-yellow-500' : 
+                            'bg-green-500'
+                          }`}
                           style={{ width: `${project.progress}%` }}
                         ></div>
                       </div>
                     </div>
-                    <Link
-                      href={`/panel/projeler/${project.id}`}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      Detayları Gör
-                    </Link>
+                    
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <div>
+                        <span className="font-medium">{getCompletedTaskCount(project)}</span>/{project.tasks.length} görev tamamlandı
+                      </div>
+                      <Link
+                        href={`/panel/projeler/${project.id}`}
+                        className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
+                      >
+                        Detayları Gör →
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Üye listesi */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium">Üyeler ({group.members.length})</h2>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            {group.members.map((member) => (
-              <div key={member.id} className="flex items-center">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                  <span className="text-gray-600 font-medium">
+      {/* Üyeler Sekmesi */}
+      {selectedTab === 'üyeler' && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-800">Üyeler ({group.members.length})</h2>
+          </div>
+          <div className="p-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              {group.members.map((member) => (
+                <div key={member.id} className="flex items-center p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-full flex items-center justify-center mr-4 text-white font-bold">
                     {member.name.substring(0, 2).toUpperCase()}
-                  </span>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-800">{member.name}</div>
+                    {member.id === group.owner.id ? (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                        Grup Yöneticisi
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+                        Üye
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <div className="font-medium">{member.name}</div>
-                  {member.id === group.owner.id && (
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      Grup Yöneticisi
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Grup Detayları Sekmesi */}
+      {selectedTab === 'detaylar' && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-800">Grup Detayları</h2>
+          </div>
+          <div className="p-6">
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">Grup Adı</h3>
+                <p className="text-gray-800 font-medium">{group.name}</p>
+              </div>
+              
+              {group.description && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Açıklama</h3>
+                  <p className="text-gray-800">{group.description}</p>
+                </div>
+              )}
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">Grup Yöneticisi</h3>
+                <p className="text-gray-800 font-medium">{group.owner.name}</p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">Üye Sayısı</h3>
+                <p className="text-gray-800 font-medium">{group.members.length} Üye</p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">Proje Sayısı</h3>
+                <p className="text-gray-800 font-medium">{projects.length} Proje</p>
+              </div>
+              
+              {group.createdAt && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Oluşturulma Tarihi</h3>
+                  <p className="text-gray-800 font-medium">{new Date(group.createdAt).toLocaleDateString('tr-TR')}</p>
+                </div>
+              )}
+              
+              <div className="pt-4">
+                <button className="text-sm text-red-600 hover:text-red-800 font-medium">
+                  Gruptan Ayrıl
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
