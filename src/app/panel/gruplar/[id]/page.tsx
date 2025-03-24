@@ -67,6 +67,11 @@ export default function GroupDetailPage() {
           throw new Error('Grup bulunamadı');
         }
         
+        // Eksik owner bilgisini kontrol edelim
+        if (!currentGroup.owner) {
+          currentGroup.owner = { id: '', name: 'Belirtilmemiş' };
+        }
+        
         console.log('Seçilen Grup Detayları:', currentGroup); // Debug için grup detaylarını konsola yazma
         console.log('Grup Üyeleri:', currentGroup.members); // Debug için üye listesini konsola yazma
         
@@ -393,7 +398,7 @@ export default function GroupDetailPage() {
                   </div>
                   <div>
                     <div className="font-medium text-gray-800">{member.role || 'Bilinmeyen Rol'}</div>
-                    {member.role === 'YÖNETİCİ' || member.id === (group.owner && group.owner.id) ? (
+                    {member.role === 'YÖNETİCİ' || member.id === (group.owner?.id) ? (
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                         Grup Yöneticisi
                       </span>
@@ -432,7 +437,7 @@ export default function GroupDetailPage() {
               
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">Grup Yöneticisi</h3>
-                <p className="text-gray-800 font-medium">{group.owner.name}</p>
+                <p className="text-gray-800 font-medium">{group.owner?.name || 'Belirtilmemiş'}</p>
               </div>
               
               <div>

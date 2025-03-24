@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Trash, Plus, Calendar, Users } from 'lucide-react';
+import { Plus, Calendar, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
-import TaskProgressSummary from '@/app/components/TaskProgressSummary';
 import { tr } from 'date-fns/locale';
 
 type Task = {
@@ -17,6 +16,7 @@ type Task = {
   status: string;
   priority: string;
   dueDate: string | null;
+  updatedAt: string;
   assignee: {
     id: string;
     name: string;
@@ -35,6 +35,7 @@ type Project = {
   };
   createdAt: string;
   tasks: Task[];
+  status?: 'AÇIK' | 'KAPALI';
 };
 
 type Group = {
@@ -60,6 +61,7 @@ export default function ProjectDetailPage() {
   const [newTaskAssignee, setNewTaskAssignee] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState('ORTA');
   const [creating, setCreating] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const projectId = params.id as string;
 
@@ -75,14 +77,18 @@ export default function ProjectDetailPage() {
         }
         
         const allProjects = await projectsResponse.json();
-        const currentProject = allProjects.find((p: any) => p.id === projectId);
+        const currentProject = allProjects.find((p: Project) => p.id === projectId);
         
         if (!currentProject) {
           router.push('/panel');
           return;
         }
         
-        setProject(currentProject);
+        // Eğer projenin status özelliği yoksa, varsayılan olarak 'AÇIK' yap
+        setProject({
+          ...currentProject,
+          status: currentProject.status || 'AÇIK'
+        });
         
         // Grup bilgilerini al
         const groupsResponse = await fetch('/api/grup');
@@ -125,6 +131,12 @@ export default function ProjectDetailPage() {
     e.preventDefault();
     
     if (!newTaskTitle.trim()) return;
+    
+    // Eğer proje kapalıysa görev eklemeye izin verme
+    if (project?.status === 'KAPALI') {
+      setError('Kapalı projelere yeni görev eklenemez. Lütfen önce projeyi açın.');
+      return;
+    }
     
     try {
       setCreating(true);
@@ -234,6 +246,79 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleToggleProjectStatus = async () => {
+    if (!project) return;
+    
+    try {
+      setUpdatingStatus(true);
+      setError('');
+      
+      const newStatus = project.status === 'KAPALI' ? 'AÇIK' : 'KAPALI';
+      
+      const response = await fetch('/api/proje', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: project.id,
+          status: newStatus,
+        }),
+      });
+      
+      if (!response.ok) {
+        // Yanıt başarısız olduğunda
+        let errorMessage = 'Proje durumu güncellenirken bir hata oluştu';
+        
+        try {
+          // Yanıt içeriğini kontrol et
+          const text = await response.text();
+          if (text && text.trim() !== '') {
+            // Geçerli JSON ise ayrıştır
+            try {
+              const errorData = JSON.parse(text);
+              errorMessage = errorData.message || errorMessage;
+            } catch {
+              // JSON değilse, metin olarak kullan
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          console.error('Hata yanıtı okunamadı');
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      // Yanıt başarılı olduğunda
+      // Yanıt veri içeriyor mu kontrol et
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          await response.json(); // Eğer JSON varsa, işleme
+        } catch {
+          console.log('API yanıtı boş veya geçersiz JSON içeriyor, bu durum normal olabilir');
+        }
+      }
+      
+      // Yanıta bakılmaksızın proje durumunu güncelle
+      setProject({
+        ...project,
+        status: newStatus,
+      });
+      
+    } catch (error) {
+      console.error('Proje durumu güncelleme hatası:', error);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Proje durumu güncellenirken bir hata oluştu');
+      }
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   // Görev istatistiklerini hazırla
   const getTaskStats = () => {
     const totalTasks = tasks.length;
@@ -294,6 +379,105 @@ export default function ProjectDetailPage() {
     );
   };
 
+  // Yeni görev ekleme formunu göster
+  const renderNewTaskForm = () => {
+    // Eğer proje kapalıysa formu gösterme
+    if (project?.status === 'KAPALI') {
+      return null;
+    }
+
+    if (!showNewTask) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+          <h3 className="text-lg font-medium mb-4">Yeni Görev Ekle</h3>
+          
+          <form onSubmit={handleCreateTask}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Başlık
+                </label>
+                <input
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Açıklama
+                </label>
+                <textarea
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  rows={3}
+                ></textarea>
+              </div>
+              
+              {group && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Görevli
+                  </label>
+                  <select
+                    value={newTaskAssignee}
+                    onChange={(e) => setNewTaskAssignee(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="">Görevli seçin</option>
+                    {group.members.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Öncelik
+                </label>
+                <select
+                  value={newTaskPriority}
+                  onChange={(e) => setNewTaskPriority(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="DÜŞÜK">Düşük</option>
+                  <option value="ORTA">Orta</option>
+                  <option value="YÜKSEK">Yüksek</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowNewTask(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                disabled={creating}
+              >
+                {creating ? 'Ekleniyor...' : 'Ekle'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -318,9 +502,6 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const completedTasks = tasks.filter(task => task.status === 'TAMAMLANDI').length;
-  const pendingTasks = tasks.length - completedTasks;
-
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -333,17 +514,32 @@ export default function ProjectDetailPage() {
             )}
             <span className="text-gray-500">/</span>
             <h1 className="text-2xl font-bold">{project.name}</h1>
+            {project.status === 'KAPALI' && (
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Kapalı
+              </span>
+            )}
           </div>
           {project.description && (
             <p className="text-gray-600 mt-1">{project.description}</p>
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/panel/gorevler/yeni?projectId=${project.id}`}>
-              <Plus className="h-4 w-4 mr-2" />
-              Yeni Görev
-            </a>
+          {project.status !== 'KAPALI' && (
+            <Button variant="outline" size="sm" asChild>
+              <a href={`/panel/gorevler/yeni?projectId=${project.id}`}>
+                <Plus className="h-4 w-4 mr-2" />
+                Yeni Görev
+              </a>
+            </Button>
+          )}
+          <Button 
+            variant={project.status === 'KAPALI' ? 'default' : 'outline'} 
+            size="sm"
+            onClick={handleToggleProjectStatus}
+            disabled={updatingStatus}
+          >
+            {updatingStatus ? 'İşleniyor...' : project.status === 'KAPALI' ? 'Projeyi Aç' : 'Projeyi Kapat'}
           </Button>
           <Button variant="outline" size="sm" asChild>
             <a href={`/panel/projeler/${project.id}/ayarlar`}>
@@ -357,20 +553,25 @@ export default function ProjectDetailPage() {
       {/* Görev İlerlemesi */}
       {tasks.length > 0 && renderTaskStats()}
       
+      {/* Yeni Görev Formu */}
+      {renderNewTaskForm()}
+
       {/* Görevler */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="p-6 flex justify-between items-center">
           <h2 className="text-lg font-medium">Görevler ({tasks.length})</h2>
           
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded text-sm flex items-center"
-            onClick={() => setShowNewTask(true)}
-          >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            Yeni Görev
-          </button>
+          {project.status !== 'KAPALI' && (
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded text-sm flex items-center"
+              onClick={() => setShowNewTask(true)}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              Yeni Görev
+            </button>
+          )}
         </div>
 
         {tasks.length === 0 ? (
@@ -421,12 +622,7 @@ export default function ProjectDetailPage() {
         )}
       </div>
 
-      {/* Görev İlerlemesi Özeti */}
-      {project.tasks && project.tasks.length > 0 && (
-        <div className="mb-6">
-          <TaskProgressSummary tasks={project.tasks} title="Proje İlerlemesi" />
-        </div>
-      )}
+
 
       <Tabs defaultValue="tasks">
         <TabsList>
@@ -530,10 +726,10 @@ export default function ProjectDetailPage() {
                           onClick={() => window.location.href = `/panel/gorevler/${task.id}`}
                         >
                           <div className="font-medium">{task.title}</div>
-                          {task.completedAt && (
+                          {task.updatedAt && task.status === 'COMPLETED' && (
                             <div className="flex items-center text-sm text-muted-foreground mt-2">
                               <Calendar className="h-3 w-3 mr-1" />
-                              {format(new Date(task.completedAt), 'dd MMM yyyy', { locale: tr })}
+                              {format(new Date(task.updatedAt), 'dd MMM yyyy', { locale: tr })}
                             </div>
                           )}
                         </div>

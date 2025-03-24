@@ -169,4 +169,77 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+// Projeleri güncelleme
+export async function PATCH(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { message: "Oturum açmanız gerekiyor" },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { id, status, name, description } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { message: "Proje ID'si gerekli" },
+        { status: 400 }
+      );
+    }
+
+    // Projeyi ve kullanıcının yetkisini kontrol et
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: {
+        group: {
+          include: {
+            members: {
+              where: { userId: session.user.id },
+            },
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      return NextResponse.json(
+        { message: "Proje bulunamadı" },
+        { status: 404 }
+      );
+    }
+
+    // Kullanıcının yetkisi var mı kontrol et
+    if (project.group.members.length === 0) {
+      return NextResponse.json(
+        { message: "Bu projeyi güncelleme yetkiniz yok" },
+        { status: 403 }
+      );
+    }
+
+    // Güncelleme verilerini hazırla
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (status !== undefined) updateData.status = status;
+
+    // Projeyi güncelle
+    const updatedProject = await prisma.project.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json(updatedProject);
+  } catch (error) {
+    console.error("Proje güncelleme hatası:", error);
+    return NextResponse.json(
+      { message: "Bir hata oluştu: " + (error instanceof Error ? error.message : String(error)) },
+      { status: 500 }
+    );
+  }
 } 
