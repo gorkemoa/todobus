@@ -8,7 +8,9 @@ type Task = {
   id: string;
   title: string;
   description: string | null;
-  completed: boolean;
+  status: string;
+  priority: string;
+  dueDate: string | null;
   assignee: {
     id: string;
     name: string;
@@ -44,6 +46,7 @@ export default function ProjectDetailPage() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskAssignee, setNewTaskAssignee] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState('ORTA');
   const [creating, setCreating] = useState(false);
 
   const projectId = params.id as string;
@@ -113,6 +116,7 @@ export default function ProjectDetailPage() {
     
     try {
       setCreating(true);
+      setError(''); // Hata mesajını temizle
       
       const response = await fetch('/api/gorev', {
         method: 'POST',
@@ -124,25 +128,30 @@ export default function ProjectDetailPage() {
           description: newTaskDescription || null,
           projectId,
           assigneeId: newTaskAssignee || null,
+          priority: newTaskPriority,
+          status: 'BEKLEMEDE',
         }),
       });
       
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Görev oluşturulurken bir hata oluştu');
+        const errorData = await response.json();
+        console.error('Görev oluşturma hatası:', errorData);
+        throw new Error(errorData.message || 'Görev oluşturulurken bir hata oluştu');
       }
       
       const newTask = await response.json();
+      console.log('Yeni görev oluşturuldu:', newTask);
       
       setTasks([...tasks, newTask]);
       setNewTaskTitle('');
       setNewTaskDescription('');
       setNewTaskAssignee('');
+      setNewTaskPriority('ORTA');
       setShowNewTask(false);
       
       // Proje ilerlemesini güncelle
       if (project) {
-        const completedTasks = tasks.filter(task => task.completed).length + (newTask.completed ? 1 : 0);
+        const completedTasks = tasks.filter(task => task.status === 'TAMAMLANDI').length + (newTask.status === 'TAMAMLANDI' ? 1 : 0);
         const totalTasks = tasks.length + 1;
         const progress = Math.round((completedTasks / totalTasks) * 100);
         
@@ -166,6 +175,8 @@ export default function ProjectDetailPage() {
 
   const handleToggleTaskStatus = async (taskId: string, completed: boolean) => {
     try {
+      const status = completed ? 'TAMAMLANDI' : 'BEKLEMEDE';
+      
       const response = await fetch('/api/gorev', {
         method: 'PATCH',
         headers: {
@@ -173,7 +184,7 @@ export default function ProjectDetailPage() {
         },
         body: JSON.stringify({
           id: taskId,
-          completed,
+          status,
         }),
       });
       
@@ -184,15 +195,15 @@ export default function ProjectDetailPage() {
       
       // Görev listesini güncelle
       setTasks(tasks.map(task => 
-        task.id === taskId ? { ...task, completed } : task
+        task.id === taskId ? { ...task, status } : task
       ));
       
       // Proje ilerlemesini güncelle
       if (project) {
         const updatedTasks = tasks.map(task => 
-          task.id === taskId ? { ...task, completed } : task
+          task.id === taskId ? { ...task, status } : task
         );
-        const completedTasks = updatedTasks.filter(task => task.completed).length;
+        const completedTasks = updatedTasks.filter(task => task.status === 'TAMAMLANDI').length;
         const progress = Math.round((completedTasks / updatedTasks.length) * 100);
         
         setProject({
@@ -235,7 +246,7 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const completedTasks = tasks.filter(task => task.completed).length;
+  const completedTasks = tasks.filter(task => task.status === 'TAMAMLANDI').length;
   const pendingTasks = tasks.length - completedTasks;
 
   return (
@@ -387,23 +398,23 @@ export default function ProjectDetailPage() {
         ) : (
           <div className="divide-y divide-gray-200">
             {tasks.map((task) => (
-              <div key={task.id} className={`p-6 ${task.completed ? 'bg-gray-50' : 'hover:bg-gray-50'}`}>
+              <div key={task.id} className={`p-6 ${task.status === 'TAMAMLANDI' ? 'bg-gray-50' : 'hover:bg-gray-50'}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3">
                     <div className="pt-1">
                       <input
                         type="checkbox"
-                        checked={task.completed}
+                        checked={task.status === 'TAMAMLANDI'}
                         onChange={(e) => handleToggleTaskStatus(task.id, e.target.checked)}
                         className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
                       />
                     </div>
                     <div>
-                      <h3 className={`text-lg font-medium ${task.completed ? 'line-through text-gray-500' : ''}`}>
+                      <h3 className={`text-lg font-medium ${task.status === 'TAMAMLANDI' ? 'line-through text-gray-500' : ''}`}>
                         {task.title}
                       </h3>
                       {task.description && (
-                        <p className={`mt-1 ${task.completed ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <p className={`mt-1 ${task.status === 'TAMAMLANDI' ? 'text-gray-400' : 'text-gray-600'}`}>
                           {task.description}
                         </p>
                       )}
@@ -415,7 +426,7 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {task.completed ? 'Tamamlandı' : 'Bekliyor'}
+                    {task.status === 'TAMAMLANDI' ? 'Tamamlandı' : 'Bekliyor'}
                   </div>
                 </div>
               </div>

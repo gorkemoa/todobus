@@ -24,11 +24,7 @@ async function GorevlerPage() {
       OR: [
         // Kullanıcıya doğrudan atanmış görevler
         {
-          assignees: {
-            some: {
-              userId: session.user.id,
-            },
-          },
+          assigneeId: session.user.id,
         },
         // Kullanıcının üye olduğu projelerdeki görevler
         {
@@ -57,18 +53,7 @@ async function GorevlerPage() {
           },
         },
       },
-      assignees: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      },
-      createdBy: {
+      assignee: {
         select: {
           id: true,
           name: true,

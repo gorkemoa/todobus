@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, description, projectId, assigneeId } = body;
+    const { title, description, projectId, assigneeId, priority = "ORTA", status = "BEKLEMEDE", dueDate = null } = body;
 
     if (!title || !projectId) {
       return NextResponse.json(
@@ -31,8 +31,7 @@ export async function POST(request: Request) {
         id: projectId,
         group: {
           OR: [
-            { ownerId: session.user.id },
-            { members: { some: { id: session.user.id } } },
+            { members: { some: { userId: session.user.id } } },
           ],
         },
       },
@@ -49,6 +48,9 @@ export async function POST(request: Request) {
       data: {
         title,
         description,
+        status,
+        priority,
+        dueDate: dueDate ? new Date(dueDate) : null,
         project: {
           connect: {
             id: projectId,
@@ -105,8 +107,7 @@ export async function GET(request: Request) {
         id: projectId,
         group: {
           OR: [
-            { ownerId: session.user.id },
-            { members: { some: { id: session.user.id } } },
+            { members: { some: { userId: session.user.id } } },
           ],
         },
       },
@@ -144,7 +145,7 @@ export async function GET(request: Request) {
   }
 }
 
-// Görev güncelleme (tamamlandı/tamamlanmadı)
+// Görev güncelleme (durum değiştirme)
 export async function PATCH(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -157,11 +158,11 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, completed } = body;
+    const { id, status } = body;
 
-    if (!id || completed === undefined) {
+    if (!id || !status) {
       return NextResponse.json(
-        { message: "Görev ID'si ve tamamlanma durumu gerekli" },
+        { message: "Görev ID'si ve durum gerekli" },
         { status: 400 }
       );
     }
@@ -173,8 +174,7 @@ export async function PATCH(request: Request) {
         project: {
           group: {
             OR: [
-              { ownerId: session.user.id },
-              { members: { some: { id: session.user.id } } },
+              { members: { some: { userId: session.user.id } } },
             ],
           },
         },
@@ -196,7 +196,7 @@ export async function PATCH(request: Request) {
         id,
       },
       data: {
-        completed,
+        status,
       },
     });
 
@@ -222,7 +222,7 @@ async function updateProjectProgress(projectId: string) {
   });
 
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((task) => task.completed).length;
+  const completedTasks = tasks.filter((task) => task.status === "TAMAMLANDI").length;
 
   // Eğer görev yoksa ilerleme 0
   const progress = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);

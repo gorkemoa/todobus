@@ -13,10 +13,7 @@ import { CheckCircle, Clock, ArrowUpRight } from 'lucide-react';
 
 type TaskWithRelations = Task & {
   project: (Project & { group: Group }) | null;
-  assignees: {
-    user: Pick<User, 'id' | 'name' | 'email'>;
-  }[];
-  createdBy: Pick<User, 'id' | 'name' | 'email'> | null;
+  assignee: Pick<User, 'id' | 'name' | 'email'> | null;
 };
 
 interface TaskListProps {
@@ -126,16 +123,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, showProject = false }) => {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <div className="flex -space-x-2">
-                  {task.assignees.slice(0, 3).map((assignee) => (
-                    <Avatar key={assignee.user.id} className="border-2 border-white h-7 w-7">
-                      <AvatarFallback>
-                        {assignee.user.name?.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  ))}
-                  {task.assignees.length > 3 && (
+                  {task.assignee && (
                     <Avatar className="border-2 border-white h-7 w-7">
-                      <AvatarFallback>+{task.assignees.length - 3}</AvatarFallback>
+                      <AvatarFallback>
+                        {task.assignee.name?.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                   )}
                 </div>
