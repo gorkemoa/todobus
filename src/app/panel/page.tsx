@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import TaskProgressSummary from "../components/TaskProgressSummary";
 
 type Group = {
   id: string;
@@ -13,25 +18,60 @@ type Group = {
     name: string;
     progress: number;
   }[];
+  ownerId: string;
+  createdAt: string;
+  updatedAt: string;
+  _count: {
+    projects: number;
+    members: number;
+  };
+};
+
+type Task = {
+  id: string;
+  title: string;
+  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  dueDate: string | null;
+  project: {
+    id: string;
+    name: string;
+    group: {
+      id: string;
+      name: string;
+    }
+  }
 };
 
 export default function PanelPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    async function fetchGroups() {
+    async function fetchData() {
       try {
-        const response = await fetch('/api/grup');
+        // Grupları getir
+        const groupsResponse = await fetch('/api/grup');
         
-        if (!response.ok) {
+        if (!groupsResponse.ok) {
           throw new Error('Gruplar yüklenirken bir hata oluştu');
         }
         
-        const data = await response.json();
-        setGroups(data);
+        const groupsData = await groupsResponse.json();
+        setGroups(groupsData);
+        
+        // Son görevleri getir
+        const tasksResponse = await fetch('/api/gorev/son');
+        
+        if (tasksResponse.ok) {
+          const tasksData = await tasksResponse.json();
+          setTasks(tasksData);
+        }
+        
       } catch (error) {
         setError('Veriler yüklenirken bir hata oluştu');
         console.error('Veri yükleme hatası:', error);
@@ -40,8 +80,24 @@ export default function PanelPage() {
       }
     }
 
-    fetchGroups();
+    fetchData();
   }, []);
+
+  // Görev istatistiklerini hazırla
+  const getTaskStats = () => {
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(task => task.status === 'TAMAMLANDI').length;
+    const inProgressTasks = tasks.filter(task => task.status === 'DEVAM_EDIYOR').length;
+    const waitingTasks = tasks.filter(task => task.status === 'BEKLEMEDE').length;
+    
+    return {
+      total: totalTasks,
+      completed: completedTasks,
+      inProgress: inProgressTasks,
+      waiting: waitingTasks,
+      completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+    };
+  };
 
   if (loading) {
     return (
@@ -59,88 +115,184 @@ export default function PanelPage() {
     );
   }
 
+  const stats = getTaskStats();
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Gösterge Paneli</h1>
-        <Link
-          href="/panel/gruplar/yeni"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded"
-        >
-          + Yeni Grup
-        </Link>
+        <div className="flex space-x-3">
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              href="/panel/gruplar/yeni"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              + Yeni Grup
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              href="/panel/gorevler/yeni"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              + Yeni Görev
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      {groups.length === 0 ? (
-        <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-          <p className="text-gray-500 mb-4">Henüz bir grubunuz bulunmuyor.</p>
-          <Link
-            href="/panel/gruplar/yeni"
-            className="text-blue-600 hover:text-blue-800 font-medium"
-          >
-            İlk grubunuzu oluşturun
+      {/* Görev İstatistikleri */}
+      {tasks.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+          <h2 className="text-lg font-semibold mb-4">Görevleriniz</h2>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-3xl font-bold">{stats.total}</div>
+              <div className="text-sm text-gray-500 mt-1">Toplam Görev</div>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+              <div className="text-3xl font-bold text-green-600">{stats.completed}</div>
+              <div className="text-sm text-gray-500 mt-1">Tamamlanan</div>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="text-3xl font-bold text-blue-600">{stats.inProgress}</div>
+              <div className="text-sm text-gray-500 mt-1">Devam Eden</div>
+            </div>
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <div className="text-3xl font-bold text-yellow-600">{stats.waiting}</div>
+              <div className="text-sm text-gray-500 mt-1">Bekleyen</div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <Link href="/panel/gorevler" className="text-blue-600 hover:text-blue-800 font-medium">
+              Tüm Görevleri Gör &rarr;
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Görev ilerlemesi kısmı */}
+      {tasks.length > 0 && (
+        <div className="mb-6">
+          <TaskProgressSummary tasks={tasks} title="Görev Özeti" />
+        </div>
+      )}
+
+      {/* Gruplar */}
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Gruplarınız</h2>
+          <Link href="/panel/gruplar" className="text-blue-600 hover:text-blue-800 font-medium">
+            Tümünü Gör &rarr;
           </Link>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {groups.map((group) => (
-            <div key={group.id} className="bg-white p-6 rounded-lg shadow-sm">
-              <h2 className="text-xl font-semibold mb-2">{group.name}</h2>
-              {group.description && (
-                <p className="text-gray-600 mb-4">{group.description}</p>
-              )}
-              
-              <div className="mt-4">
-                <p className="text-sm text-gray-500 mb-2">
-                  {group.projects.length} Proje
-                </p>
-                
-                {group.projects.length > 0 && (
-                  <div className="space-y-3">
-                    {group.projects.slice(0, 3).map((project) => (
-                      <Link
-                        key={project.id}
-                        href={`/panel/projeler/${project.id}`}
-                        className="flex justify-between items-center p-2 hover:bg-gray-50 rounded"
-                      >
-                        <span>{project.name}</span>
-                        <div className="flex items-center">
-                          <div className="w-24 h-2 bg-gray-200 rounded-full mr-2">
-                            <div
-                              className="h-full bg-blue-500 rounded-full"
-                              style={{ width: `${project.progress}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            {project.progress}%
-                          </span>
-                        </div>
-                      </Link>
-                    ))}
-                    
-                    {group.projects.length > 3 && (
-                      <Link
-                        href={`/panel/gruplar/${group.id}`}
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        + {group.projects.length - 3} daha
-                      </Link>
-                    )}
+        
+        {groups.length === 0 ? (
+          <div className="text-center">
+            <p className="text-gray-500 mb-4">Henüz bir grubunuz bulunmuyor.</p>
+            <Button asChild>
+              <Link
+                href="/panel/gruplar/yeni"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                İlk grubunuzu oluşturun
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {groups.slice(0, 3).map((group) => (
+              <Card key={group.id} className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-lg">{group.name}</CardTitle>
+                  <CardDescription>{group.description || 'Açıklama yok'}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>{group._count.projects} Proje</span>
+                    <span>{group._count.members} Üye</span>
                   </div>
-                )}
-                
-                <div className="mt-4">
-                  <Link
-                    href={`/panel/gruplar/${group.id}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto mt-2" 
+                    onClick={() => router.push(`/panel/gruplar/${group.id}`)}
                   >
-                    Detayları Gör
+                    Detayları Görüntüle
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Son görevler kısmı */}
+      {tasks.length > 0 && (
+        <>
+          <h2 className="text-xl font-semibold mb-4 mt-8">Son Görevler</h2>
+          <div className="space-y-2">
+            {tasks.slice(0, 5).map((task) => (
+              <Card key={task.id} className="hover:shadow-sm transition-shadow">
+                <CardHeader className="py-3">
+                  <div className="flex justify-between items-center">
+                    <Link 
+                      href={`/panel/gorevler/${task.id}`}
+                      className="text-base font-medium hover:underline"
+                    >
+                      {task.title}
+                    </Link>
+                    <div className="flex items-center space-x-2">
+                      {task.status === 'WAITING' && (
+                        <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">
+                          Bekliyor
+                        </span>
+                      )}
+                      {task.status === 'IN_PROGRESS' && (
+                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                          Devam Ediyor
+                        </span>
+                      )}
+                      {task.status === 'COMPLETED' && (
+                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                          Tamamlandı
+                        </span>
+                      )}
+                      {task.status === 'CANCELLED' && (
+                        <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                          İptal Edildi
+                        </span>
+                      )}
+                      {task.priority === 'HIGH' && (
+                        <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                          Yüksek Öncelik
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <CardDescription>
+                    <Link 
+                      href={`/panel/projeler/${task.project.id}`}
+                      className="text-sm hover:underline"
+                    >
+                      {task.project.name} ({task.project.group.name})
+                    </Link>
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+            {tasks.length > 5 && (
+              <div className="text-center mt-4">
+                <Button variant="outline" asChild>
+                  <Link href="/panel/gorevlerim">
+                    Tüm Görevleri Görüntüle
                   </Link>
-                </div>
+                </Button>
               </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

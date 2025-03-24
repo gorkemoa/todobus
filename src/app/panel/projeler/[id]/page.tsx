@@ -3,6 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Trash, Plus, Calendar, Users } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { format } from 'date-fns';
+import TaskProgressSummary from '@/app/components/TaskProgressSummary';
+import { tr } from 'date-fns/locale';
 
 type Task = {
   id: string;
@@ -23,6 +29,12 @@ type Project = {
   description: string | null;
   progress: number;
   groupId: string;
+  group: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  tasks: Task[];
 };
 
 type Group = {
@@ -222,6 +234,66 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Görev istatistiklerini hazırla
+  const getTaskStats = () => {
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(task => task.status === 'TAMAMLANDI').length;
+    const inProgressTasks = tasks.filter(task => task.status === 'DEVAM_EDIYOR').length;
+    const waitingTasks = tasks.filter(task => task.status === 'BEKLEMEDE').length;
+    const cancelledTasks = tasks.filter(task => task.status === 'IPTAL').length;
+    
+    return {
+      total: totalTasks,
+      completed: completedTasks,
+      inProgress: inProgressTasks,
+      waiting: waitingTasks,
+      cancelled: cancelledTasks,
+      completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+    };
+  };
+  
+  // Görev ilerlemesi için ilerleme çubuğu ekleyelim
+  const renderTaskStats = () => {
+    const stats = getTaskStats();
+    
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+        <h2 className="text-lg font-medium mb-4">Proje İlerlemesi</h2>
+        
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm text-gray-600">Tamamlanma</span>
+          <span className="text-sm font-medium">{stats.completionRate}%</span>
+        </div>
+        
+        <div className="w-full h-4 bg-gray-200 rounded-full mb-4">
+          <div
+            className="h-full bg-blue-500 rounded-full"
+            style={{ width: `${stats.completionRate}%` }}
+          ></div>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-xs text-gray-500">Toplam Görev</div>
+          </div>
+          <div className="bg-green-50 p-3 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+            <div className="text-xs text-gray-500">Tamamlanan</div>
+          </div>
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">{stats.inProgress}</div>
+            <div className="text-xs text-gray-500">Devam Eden</div>
+          </div>
+          <div className="bg-yellow-50 p-3 rounded-lg">
+            <div className="text-2xl font-bold text-yellow-600">{stats.waiting}</div>
+            <div className="text-xs text-gray-500">Bekleyen</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -266,129 +338,39 @@ export default function ProjectDetailPage() {
             <p className="text-gray-600 mt-1">{project.description}</p>
           )}
         </div>
-        <button
-          onClick={() => setShowNewTask(!showNewTask)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded"
-        >
-          + Yeni Görev
-        </button>
-      </div>
-
-      {/* İlerleme bilgisi */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-lg font-medium mb-2">Proje İlerlemesi</h2>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center">
-                <div className="w-full h-4 bg-gray-200 rounded-full mr-2" style={{ width: '300px' }}>
-                  <div
-                    className="h-full bg-blue-500 rounded-full"
-                    style={{ width: `${project.progress}%` }}
-                  ></div>
-                </div>
-                <span className="font-medium text-lg">
-                  {project.progress}%
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{tasks.length}</div>
-              <div className="text-sm text-gray-500">Toplam</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{pendingTasks}</div>
-              <div className="text-sm text-gray-500">Bekliyor</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{completedTasks}</div>
-              <div className="text-sm text-gray-500">Tamamlandı</div>
-            </div>
-          </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/panel/gorevler/yeni?projectId=${project.id}`}>
+              <Plus className="h-4 w-4 mr-2" />
+              Yeni Görev
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/panel/projeler/${project.id}/ayarlar`}>
+              <Users className="h-4 w-4 mr-2" />
+              Proje Ayarları
+            </a>
+          </Button>
         </div>
       </div>
 
-      {/* Yeni görev formu */}
-      {showNewTask && (
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-          <h2 className="text-lg font-medium mb-4">Yeni Görev Ekle</h2>
-          <form onSubmit={handleCreateTask} className="space-y-4">
-            <div>
-              <label htmlFor="taskTitle" className="block text-sm font-medium text-gray-700 mb-1">
-                Görev Başlığı
-              </label>
-              <input
-                type="text"
-                id="taskTitle"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                placeholder="Görev başlığı"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="taskDescription" className="block text-sm font-medium text-gray-700 mb-1">
-                Açıklama (İsteğe bağlı)
-              </label>
-              <textarea
-                id="taskDescription"
-                value={newTaskDescription}
-                onChange={(e) => setNewTaskDescription(e.target.value)}
-                rows={3}
-                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                placeholder="Görev hakkında kısa bir açıklama"
-              />
-            </div>
-
-            {group && (
-              <div>
-                <label htmlFor="taskAssignee" className="block text-sm font-medium text-gray-700 mb-1">
-                  Görevli (İsteğe bağlı)
-                </label>
-                <select
-                  id="taskAssignee"
-                  value={newTaskAssignee}
-                  onChange={(e) => setNewTaskAssignee(e.target.value)}
-                  className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                >
-                  <option value="">Görevli seçin</option>
-                  {group.members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div className="flex justify-end space-x-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowNewTask(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              >
-                İptal
-              </button>
-              <button
-                type="submit"
-                disabled={creating || !newTaskTitle.trim()}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {creating ? 'Oluşturuluyor...' : 'Görev Oluştur'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Görevler listesi */}
+      {/* Görev İlerlemesi */}
+      {tasks.length > 0 && renderTaskStats()}
+      
+      {/* Görevler */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="p-6 flex justify-between items-center">
           <h2 className="text-lg font-medium">Görevler ({tasks.length})</h2>
+          
+          <button
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded text-sm flex items-center"
+            onClick={() => setShowNewTask(true)}
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Yeni Görev
+          </button>
         </div>
 
         {tasks.length === 0 ? (
@@ -410,9 +392,11 @@ export default function ProjectDetailPage() {
                       />
                     </div>
                     <div>
-                      <h3 className={`text-lg font-medium ${task.status === 'TAMAMLANDI' ? 'line-through text-gray-500' : ''}`}>
-                        {task.title}
-                      </h3>
+                      <Link href={`/panel/gorevler/${task.id}`} className="hover:underline">
+                        <h3 className={`text-lg font-medium ${task.status === 'TAMAMLANDI' ? 'line-through text-gray-500' : ''}`}>
+                          {task.title}
+                        </h3>
+                      </Link>
                       {task.description && (
                         <p className={`mt-1 ${task.status === 'TAMAMLANDI' ? 'text-gray-400' : 'text-gray-600'}`}>
                           {task.description}
@@ -426,7 +410,9 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {task.status === 'TAMAMLANDI' ? 'Tamamlandı' : 'Bekliyor'}
+                    {task.status === 'TAMAMLANDI' ? 'Tamamlandı' : 
+                     task.status === 'BEKLEMEDE' ? 'Bekliyor' :
+                     task.status === 'DEVAM_EDIYOR' ? 'Devam Ediyor' : 'İptal'}
                   </div>
                 </div>
               </div>
@@ -434,6 +420,150 @@ export default function ProjectDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Görev İlerlemesi Özeti */}
+      {project.tasks && project.tasks.length > 0 && (
+        <div className="mb-6">
+          <TaskProgressSummary tasks={project.tasks} title="Proje İlerlemesi" />
+        </div>
+      )}
+
+      <Tabs defaultValue="tasks">
+        <TabsList>
+          <TabsTrigger value="tasks">Görevler</TabsTrigger>
+          <TabsTrigger value="timeline">Zaman Çizelgesi</TabsTrigger>
+        </TabsList>
+        <TabsContent value="tasks" className="mt-4">
+          {project.tasks && project.tasks.length > 0 ? (
+            <div className="space-y-4">
+              {/* Görevleri Duruma Göre Grupla */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Bekleyen Görevler */}
+                <div className="border rounded-md p-4">
+                  <h3 className="font-medium mb-3 flex items-center">
+                    <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+                    Bekliyor
+                  </h3>
+                  <div className="space-y-2">
+                    {project.tasks
+                      .filter(task => task.status === 'WAITING')
+                      .map(task => (
+                        <div 
+                          key={task.id} 
+                          className="bg-card p-3 rounded-md border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => window.location.href = `/panel/gorevler/${task.id}`}
+                        >
+                          <div className="font-medium">{task.title}</div>
+                          {task.dueDate && (
+                            <div className="flex items-center text-sm text-muted-foreground mt-2">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {format(new Date(task.dueDate), 'dd MMM yyyy', { locale: tr })}
+                            </div>
+                          )}
+                          {task.priority === 'HIGH' && (
+                            <div className="mt-2">
+                              <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                                Yüksek Öncelik
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    }
+                    {project.tasks.filter(task => task.status === 'WAITING').length === 0 && (
+                      <div className="text-sm text-muted-foreground">Bekleyen görev yok</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Devam Eden Görevler */}
+                <div className="border rounded-md p-4">
+                  <h3 className="font-medium mb-3 flex items-center">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                    Devam Ediyor
+                  </h3>
+                  <div className="space-y-2">
+                    {project.tasks
+                      .filter(task => task.status === 'IN_PROGRESS')
+                      .map(task => (
+                        <div 
+                          key={task.id} 
+                          className="bg-card p-3 rounded-md border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => window.location.href = `/panel/gorevler/${task.id}`}
+                        >
+                          <div className="font-medium">{task.title}</div>
+                          {task.dueDate && (
+                            <div className="flex items-center text-sm text-muted-foreground mt-2">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {format(new Date(task.dueDate), 'dd MMM yyyy', { locale: tr })}
+                            </div>
+                          )}
+                          {task.priority === 'HIGH' && (
+                            <div className="mt-2">
+                              <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                                Yüksek Öncelik
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    }
+                    {project.tasks.filter(task => task.status === 'IN_PROGRESS').length === 0 && (
+                      <div className="text-sm text-muted-foreground">Devam eden görev yok</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tamamlanan Görevler */}
+                <div className="border rounded-md p-4">
+                  <h3 className="font-medium mb-3 flex items-center">
+                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    Tamamlandı
+                  </h3>
+                  <div className="space-y-2">
+                    {project.tasks
+                      .filter(task => task.status === 'COMPLETED')
+                      .map(task => (
+                        <div 
+                          key={task.id} 
+                          className="bg-card p-3 rounded-md border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => window.location.href = `/panel/gorevler/${task.id}`}
+                        >
+                          <div className="font-medium">{task.title}</div>
+                          {task.completedAt && (
+                            <div className="flex items-center text-sm text-muted-foreground mt-2">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {format(new Date(task.completedAt), 'dd MMM yyyy', { locale: tr })}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    }
+                    {project.tasks.filter(task => task.status === 'COMPLETED').length === 0 && (
+                      <div className="text-sm text-muted-foreground">Tamamlanan görev yok</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center p-8 bg-muted rounded-lg">
+              <p className="mb-4">Bu projede henüz görev bulunmuyor.</p>
+              <Button asChild>
+                <a href={`/panel/gorevler/yeni?projectId=${project.id}`}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  İlk görevi oluştur
+                </a>
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="timeline" className="mt-4">
+          <div className="text-muted-foreground">
+            Proje zaman çizelgesi yakında eklenecek
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 } 
