@@ -10,6 +10,11 @@ import { useRouter } from "next/navigation";
 
 
 type Group = {
+  members: {
+    id: string;
+    name: string;
+    email: string;
+  }[];
   id: string;
   name: string;
   description: string | null;
@@ -150,7 +155,7 @@ export default function PanelPage() {
               href="/panel/gruplar/yeni"
             >
               <Plus className="h-4 w-4 mr-2" />
-              + Yeni Grup
+              Yeni Grup
             </Link>
           </Button>
           <Button variant="outline" size="sm" asChild className="font-medium text-gray-700 border-gray-400">
@@ -158,7 +163,7 @@ export default function PanelPage() {
               href="/panel/gorevler/yeni"
             >
               <Plus className="h-4 w-4 mr-2" />
-              + Yeni Görev
+              Yeni Görev
             </Link>
           </Button>
         </div>
@@ -220,6 +225,7 @@ export default function PanelPage() {
             </Button>
           </div>
         ) : (
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {groups.filter(group => group !== null && group !== undefined).slice(0, 3).map((group) => (
               <Card key={group.id} className="hover:shadow-md transition-shadow">
@@ -229,8 +235,8 @@ export default function PanelPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{group._count?.projects || 0} Proje</span>
-                    <span>{group._count?.members || 0} Üye</span>
+                  <span>{group.projects.length > 0 ? `${group.projects.length} Proje` : 'Proje yok'}</span>
+                  <span>{group.members.length > 0 ? `${group.members.length} Üye` : 'Henüz üye yok'}</span>
                   </div>
                   <Button 
                     variant="link" 

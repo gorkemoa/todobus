@@ -568,9 +568,9 @@ export default function ProjectDetailPage() {
                   >
                     <option value="">Görevli seçin (isteğe bağlı)</option>
                     {group.members && group.members.length > 0 ? (
-                      group.members.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.name}
+                      group.members.map((task) => (
+                        <option key={task.id} value={task.id}>
+                          {task.name}
                         </option>
                       ))
                     ) : (
@@ -749,12 +749,13 @@ export default function ProjectDetailPage() {
                       </Link>
                       {task.description && (
                         <p className={`mt-1 ${task.status === 'TAMAMLANDI' ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {task.description}
+                          {task.description} 
                         </p>
                       )}
                       {task.assignee && (
                         <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          Görevli: {task.assignee.name}
+                          <Users className="h-3 w-3 mr-1" />
+                          {task.assignee.name}
                         </div>
                       )}
                     </div>
@@ -803,6 +804,12 @@ export default function ProjectDetailPage() {
                               {format(new Date(task.dueDate), 'dd MMM yyyy', { locale: tr })}
                             </div>
                           )}
+                          {task.assignee && (
+                            <div className="flex items-center text-sm text-gray-600 mt-2">
+                              <Users className="h-3 w-3 mr-1" />
+                              {task.assignee.name}
+                            </div>
+                          )}
                           {task.priority === 'HIGH' && (
                             <div className="mt-2">
                               <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
@@ -841,6 +848,12 @@ export default function ProjectDetailPage() {
                               {format(new Date(task.dueDate), 'dd MMM yyyy', { locale: tr })}
                             </div>
                           )}
+                          {task.assignee && (
+                            <div className="flex items-center text-sm text-gray-600 mt-2">
+                              <Users className="h-3 w-3 mr-1" />
+                              {task.assignee.name}
+                            </div>
+                          )}
                           {task.priority === 'HIGH' && (
                             <div className="mt-2">
                               <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
@@ -877,6 +890,12 @@ export default function ProjectDetailPage() {
                             <div className="flex items-center text-sm text-gray-600 mt-2">
                               <Calendar className="h-3 w-3 mr-1" />
                               {format(new Date(task.updatedAt), 'dd MMM yyyy', { locale: tr })}
+                            </div>
+                          )}
+                          {task.assignee && (
+                            <div className="flex items-center text-sm text-gray-600 mt-2">
+                              <Users className="h-3 w-3 mr-1" />
+                              {task.assignee.name}
                             </div>
                           )}
                         </div>

@@ -145,7 +145,7 @@ export async function PATCH(
     }
 
     // Durumu güncelle
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (data.status) {
       updateData.status = data.status;

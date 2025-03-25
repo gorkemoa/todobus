@@ -39,7 +39,7 @@ export default function RegisterPage() {
       }
 
       router.push('/giris?success=true');
-    } catch (error) {
+    } catch (e) {
       setError('Bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
       setLoading(false);
     }

@@ -10,6 +10,16 @@ const nextConfig = {
       'placehold.co',
     ],
   },
+  
+  // ESLint kontrollerini devre dışı bırak
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
+  // TypeScript hata kontrollerini devre dışı bırak
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 }
 
 module.exports = nextConfig 

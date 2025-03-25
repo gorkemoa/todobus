@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 }
 
 // Grupları listeleme
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 

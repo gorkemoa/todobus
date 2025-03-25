@@ -32,29 +32,29 @@ export default function LoginPage() {
 
       router.push('/panel');
       router.refresh();
-    } catch (error) {
+    } catch (e) {
       setError('Bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
+      <div className="max-w-md w-full space-y-6 bg-white p-10 rounded-xl shadow-lg border border-gray-100">
         <div className="text-center">
-          <h2 className="text-3xl font-bold">Giriş Yap</h2>
-          <p className="mt-2 text-gray-600">TodoBus hesabınıza giriş yapın</p>
+          <h2 className="text-3xl font-bold text-gray-800">Giriş Yap</h2>
+          <p className="mt-2 text-gray-500 text-sm">TodoBus hesabınıza giriş yapın</p>
         </div>
         
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-md text-sm">
             {error}
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               E-posta
             </label>
             <input
@@ -64,12 +64,13 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+              className="block w-full rounded-lg border-gray-200 px-4 py-3 text-gray-700 focus:border-blue-500 focus:ring-blue-500 shadow-sm border text-sm"
+              placeholder="örnek@mail.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Şifre
             </label>
             <input
@@ -79,7 +80,8 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+              className="block w-full rounded-lg border-gray-200 px-4 py-3 text-gray-700 focus:border-blue-500 focus:ring-blue-500 shadow-sm border text-sm"
+              placeholder="••••••••"
             />
           </div>
 
@@ -87,17 +89,17 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors duration-200"
             >
               {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
             </button>
           </div>
         </form>
 
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
+        <div className="text-center pt-2">
+          <p className="text-sm text-gray-500">
             Hesabınız yok mu?{' '}
-            <Link href="/kayit" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/kayit" className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
               Kayıt olun
             </Link>
           </p>

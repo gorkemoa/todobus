@@ -223,7 +223,7 @@ export async function PATCH(request: Request) {
     }
 
     // Güncelleme verilerini hazırla
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (status !== undefined) updateData.status = status;

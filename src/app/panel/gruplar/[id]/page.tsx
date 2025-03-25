@@ -186,7 +186,7 @@ export default function GroupDetailPage() {
             )}
             <div className="mt-4 flex items-center">
               <UserGroupIcon className="h-5 w-5 mr-2" />
-              <span>{group.members.length} Üye</span>
+              <span>{group.members.length > 0 ? `${group.members.length} Üye` : 'Henüz üye yok'}</span>
               
               <div className="mx-4 h-5 border-l border-blue-300"></div>
               
