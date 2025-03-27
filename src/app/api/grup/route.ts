@@ -15,14 +15,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Debug için kullanıcı ID konsola yazdırılıyor
+    // Debug için kullanıcı bilgileri konsola yazdırılıyor
     console.log("Session user ID:", session.user.id);
     console.log("Session user:", session.user);
 
-    // Kullanıcı ID'sinin tanımlı olduğundan emin olalım
-    if (!session.user.id) {
+    // Kullanıcı email'inin tanımlı olduğundan emin olalım
+    if (!session.user.email) {
       return NextResponse.json(
-        { message: "Kullanıcı kimliği bulunamadı" },
+        { message: "Kullanıcı email adresi bulunamadı" },
         { status: 400 }
       );
     }
@@ -45,7 +45,8 @@ export async function POST(request: Request) {
           create: {
             user: {
               connect: {
-                id: session.user.id
+                // ID yerine email kullanarak kullanıcıyı bağlama
+                email: session.user.email
               }
             },
             role: "YÖNETİCİ"
