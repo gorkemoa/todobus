@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Debug için kullanıcı bilgileri konsola yazdırılıyor
+    // Debug için kullanıcı bilgileri konsola yazdırılıyor.
     console.log("Session user ID:", session.user.id);
     console.log("Session user:", session.user);
 
