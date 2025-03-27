@@ -15,6 +15,10 @@ export async function POST(request: Request) {
       );
     }
 
+    // Debug için kullanıcı ID konsola yazdırılıyor
+    console.log("Session user ID:", session.user.id);
+    console.log("Session user:", session.user);
+
     // Kullanıcı ID'sinin tanımlı olduğundan emin olalım
     if (!session.user.id) {
       return NextResponse.json(
@@ -53,8 +57,10 @@ export async function POST(request: Request) {
     return NextResponse.json(group, { status: 201 });
   } catch (error) {
     console.error("Grup oluşturma hatası:", error);
+    console.error("Hata detayları:", JSON.stringify(error, null, 2));
+    
     return NextResponse.json(
-      { message: "Bir hata oluştu" },
+      { message: "Bir hata oluştu", error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

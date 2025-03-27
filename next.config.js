@@ -4,10 +4,19 @@ const nextConfig = {
   // Diğer mevcut ayarlar burada olabilir
   
   images: {
-    domains: [
-      'images.unsplash.com',
-      'img.icons8.com',
-      'placehold.co',
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.icons8.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
     ],
   },
   
