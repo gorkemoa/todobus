@@ -15,6 +15,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Kullanıcı ID'sinin tanımlı olduğundan emin olalım
+    if (!session.user.id) {
+      return NextResponse.json(
+        { message: "Kullanıcı kimliği bulunamadı" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { name, description } = body;
 
