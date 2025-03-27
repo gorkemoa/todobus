@@ -31,7 +31,11 @@ export async function POST(request: Request) {
         description,
         members: {
           create: {
-            userId: session.user.id,
+            user: {
+              connect: {
+                id: session.user.id
+              }
+            },
             role: "YÖNETİCİ"
           }
         }
